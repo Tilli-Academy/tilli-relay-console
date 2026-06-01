@@ -1,0 +1,126 @@
+{
+  "name": "swaggerx",
+  "version": "0.1.0",
+  "description": "A Swagger UI clone with Postman-like UI/UX — installable as an npm plugin",
+  "type": "module",
+  "main": "./dist/swaggerx.js",
+  "module": "./dist/swaggerx.es.js",
+  "unpkg": "./dist/swaggerx.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/swaggerx.es.js",
+      "require": "./dist/swaggerx.js"
+    },
+    "./express": {
+      "types": "./dist/middleware/express.d.ts",
+      "import": "./dist/middleware/express.js",
+      "require": "./dist/middleware/express.cjs"
+    },
+    "./fastify": {
+      "types": "./dist/middleware/fastify.d.ts",
+      "import": "./dist/middleware/fastify.js",
+      "require": "./dist/middleware/fastify.cjs"
+    },
+    "./style.css": "./dist/swaggerx.css"
+  },
+  "sideEffects": [
+    "**/*.css",
+    "./dist/swaggerx.es.js",
+    "./dist/swaggerx.js"
+  ],
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "pnpm build:frontend && pnpm build:middleware",
+    "build:frontend": "vite build",
+    "build:middleware": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "lint": "eslint src/",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "swagger",
+    "openapi",
+    "api-documentation",
+    "postman",
+    "rest-api",
+    "web-components",
+    "lit",
+    "swagger-ui",
+    "api-explorer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "packageManager": "pnpm@10.33.4",
+  "engines": {
+    "node": ">=18"
+  },
+  "peerDependencies": {
+    "express": ">=4.0.0",
+    "fastify": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "express": {
+      "optional": true
+    },
+    "fastify": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@apidevtools/swagger-parser": "^12.1.0",
+    "@codemirror/commands": "^6.10.3",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/lang-xml": "^6.1.0",
+    "@codemirror/language": "^6.12.3",
+    "@codemirror/state": "^6.6.0",
+    "@codemirror/view": "^6.43.0",
+    "@lezer/highlight": "^1.2.3",
+    "@lit/context": "^1.1.6",
+    "fuse.js": "^7.3.0",
+    "js-yaml": "^4.1.1",
+    "lit": "^3.3.2",
+    "prismjs": "^1.30.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@fastify/static": "^9.1.3",
+    "@open-wc/testing": "^4.0.0",
+    "@tailwindcss/vite": "^4.3.0",
+    "@types/express": "^5.0.6",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.7.0",
+    "@types/prismjs": "^1.26.6",
+    "@vitest/browser": "^4.1.6",
+    "autoprefixer": "^10.5.0",
+    "eslint": "^10.3.0",
+    "eslint-config-prettier": "^10.1.8",
+    "express": "^5.2.1",
+    "fastify": "^5.8.5",
+    "fastify-plugin": "^5.1.0",
+    "happy-dom": "^20.9.0",
+    "postcss": "^8.5.14",
+    "prettier": "^3.8.3",
+    "tailwindcss": "^4.3.0",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.12",
+    "vite-plugin-node-polyfills": "^0.26.0",
+    "vitest": "^4.1.6"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

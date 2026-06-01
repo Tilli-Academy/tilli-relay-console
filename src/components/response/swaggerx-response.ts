@@ -1,0 +1,149 @@
+import { LitElement, html, css, nothing } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { baseStyles } from '../../styles/theme.js';
+import '../shared/swaggerx-tabs.js';
+import './swaggerx-response-meta.js';
+import './swaggerx-response-headers.js';
+import './swaggerx-response-body.js';
+import type { ResponseState } from '../../core/types.js';
+import type { TabDef } from '../shared/swaggerx-tabs.js';
+
+/**
+ * <swaggerx-response> — Response viewer container.
+ *
+ * Shows status badge + meta, and tabs for Body | Headers.
+ */
+@customElement('swaggerx-response')
+export class SwaggerXResponse extends LitElement {
+  static override styles = [
+    baseStyles,
+    css`
+      :host {
+        display: block;
+      }
+
+      .response-container {
+        overflow: hidden;
+        background: var(--sx-surface-primary);
+      }
+
+      .response-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--sx-border);
+        background: var(--sx-surface-card);
+      }
+
+      .response-title {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--sx-text-muted);
+        margin: 0 0 8px;
+      }
+
+      .tab-area {
+        padding: 0 16px;
+      }
+
+      .tab-content {
+        padding: 12px 16px;
+      }
+
+      .error-body {
+        padding: 16px;
+        font-size: 0.8125rem;
+        color: var(--sx-error);
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        line-height: 1.6;
+      }
+    `,
+  ];
+
+  @property({ type: Object })
+  response: ResponseState | null = null;
+
+  @state()
+  private _activeTab = 'body';
+
+  private get _tabs(): TabDef[] {
+    if (!this.response) return [];
+    const headerCount = Object.keys(this.response.headers).length;
+    return [
+      { id: 'body', label: 'Body' },
+      {
+        id: 'headers',
+        label: 'Headers',
+        badge: headerCount > 0 ? String(headerCount) : undefined,
+      },
+    ];
+  }
+
+  override render() {
+    if (!this.response) return nothing;
+
+    const resp = this.response;
+
+    // Network/CORS error
+    if (resp.status === 0) {
+      return html`
+        <div class="response-container">
+          <div class="response-header">
+            <div class="response-title">Response</div>
+            <swaggerx-response-meta
+              status=${resp.status}
+              status-text=${resp.statusText}
+              time=${resp.time}
+              size=${resp.size}
+            ></swaggerx-response-meta>
+          </div>
+          <div class="error-body">${resp.body}</div>
+        </div>
+      `;
+    }
+
+    return html`
+      <div class="response-container">
+        <div class="response-header">
+          <div class="response-title">Response</div>
+          <swaggerx-response-meta
+            status=${resp.status}
+            status-text=${resp.statusText}
+            time=${resp.time}
+            size=${resp.size}
+          ></swaggerx-response-meta>
+        </div>
+        <div class="tab-area">
+          <swaggerx-tabs
+            .tabs=${this._tabs}
+            active=${this._activeTab}
+            @tab-change=${(e: CustomEvent) => { this._activeTab = e.detail.tab; }}
+          ></swaggerx-tabs>
+        </div>
+        <div class="tab-content">
+          ${this._activeTab === 'body'
+            ? html`
+                <swaggerx-response-body
+                  body=${resp.body}
+                  content-type=${resp.contentType}
+                ></swaggerx-response-body>
+              `
+            : nothing}
+          ${this._activeTab === 'headers'
+            ? html`
+                <swaggerx-response-headers
+                  .headers=${resp.headers}
+                ></swaggerx-response-headers>
+              `
+            : nothing}
+        </div>
+      </div>
+    `;
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'swaggerx-response': SwaggerXResponse;
+  }
+}
