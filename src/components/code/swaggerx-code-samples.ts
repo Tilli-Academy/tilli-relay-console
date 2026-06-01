@@ -4,7 +4,7 @@ import { baseStyles } from '../../styles/theme.js';
 import '../shared/swaggerx-tabs.js';
 import './swaggerx-code-block.js';
 import { generateCodeSamples } from '../../core/code-gen.js';
-import type { Endpoint } from '../../core/types.js';
+import type { Endpoint, AuthConfig } from '../../core/types.js';
 import type { TabDef } from '../shared/swaggerx-tabs.js';
 
 type CodeLanguage = 'curl' | 'javascript' | 'python' | 'nodejs';
@@ -40,12 +40,34 @@ export class SwaggerXCodeSamples extends LitElement {
   @property({ type: String, attribute: 'base-url' })
   baseUrl = '';
 
+  @property({ type: Object })
+  auth: AuthConfig = { type: 'none' };
+
+  @property({ type: Array })
+  headers: Array<{ key: string; value: string; enabled: boolean }> = [];
+
+  @property({ type: String })
+  userBody = '';
+
   @state()
   private _activeTab: CodeLanguage = 'curl';
 
   private get _samples(): Record<string, string> {
     if (!this.endpoint) return {};
-    return generateCodeSamples(this.endpoint, this.baseUrl);
+
+    // Convert enabled header pairs to Record<string, string>
+    const headerRecord: Record<string, string> = {};
+    for (const pair of this.headers) {
+      if (pair.enabled && pair.key.trim()) {
+        headerRecord[pair.key] = pair.value;
+      }
+    }
+
+    return generateCodeSamples(this.endpoint, this.baseUrl, {
+      auth: this.auth,
+      headers: headerRecord,
+      userBody: this.userBody,
+    });
   }
 
   private get _tabs(): TabDef[] {

@@ -457,6 +457,9 @@ export class SwaggerXEndpoint extends LitElement {
       <swaggerx-code-samples
         .endpoint=${ep}
         base-url=${this.baseUrl}
+        .auth=${this.auth}
+        .headers=${this.headerPairs}
+        .userBody=${this.requestBody}
       ></swaggerx-code-samples>
     `;
   }

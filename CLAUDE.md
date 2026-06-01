@@ -13,7 +13,7 @@ SwaggerX is a Swagger UI alternative with Postman-like UI/UX, built as an instal
 - **Authentication Support** — Bearer token, Basic auth, API Key (header or query)
 - **Response Viewer** — Color-coded status badges, response time/size, formatted JSON body, response headers table
 - **Schema Documentation** — Expandable property tree with types, constraints, descriptions; generated JSON examples
-- **Code Samples** — Auto-generated snippets in cURL, JavaScript, Python, Node.js
+- **Code Samples** — Dynamic snippets in cURL, JavaScript, Python, Node.js that reflect the user's auth config, custom headers, and request body from the request builder. Falls back to spec examples when no user input. Supports Bearer, Basic, API Key (header/query), and OAuth2 auth. Header merge order: auth headers → custom headers → Content-Type/Accept defaults.
 - **Request History** — Stores up to 100 requests in localStorage with full response data including auth config, click to restore saved request/response/auth, selected item highlighting, delete individual or clear all. Old entries without auth reset to "No Auth" on restore.
 - **Environment Variables** — Multiple environments (Dev, Staging, Prod), `{{variable}}` interpolation in URLs, headers, body, and auth fields (token, username, password, API key name/value). Auto-save indicator in env manager modal header (debounced 500ms).
 - **Dark Mode** — Light/dark theme toggle, persisted to localStorage
@@ -80,7 +80,7 @@ SwaggerX is a Swagger UI alternative with Postman-like UI/UX, built as an instal
 |---|---|
 | Source code (42 components) | Done |
 | Dual build system (Vite + tsup) | Done |
-| Unit tests (436 tests, 59 files) | Done |
+| Unit tests (446 tests, 59 files) | Done |
 | Accessibility audit + fixes | Done |
 | TypeScript strict mode | Done |
 | Dev server (Vite) | Done |
@@ -93,7 +93,7 @@ SwaggerX is a Swagger UI alternative with Postman-like UI/UX, built as an instal
 | Contributing guide (CONTRIBUTING.md) | Not created |
 | Changelog (CHANGELOG.md) | Not created |
 | License file (LICENSE) | Not created |
-| Git repository | Not initialized |
+| Git repository | Initialized (main branch) |
 | Performance benchmarks | Not created |
 
 ### Build Outputs
@@ -159,7 +159,13 @@ History restore:
   Old entries without auth → resets to { type: 'none' }
 
 Environment vars → env-interpolator.ts → replaces {{var}} in URLs, headers, body, and auth fields
-Code samples → code-gen.ts → uses window.location.origin when baseUrl is empty
+Code samples (dynamic):
+  code-gen.ts generateCodeSamples(endpoint, baseUrl, { auth, headers, userBody })
+  → buildAuthHeaders(auth) → mergedHeaders (auth → custom → Content-Type/Accept defaults)
+  → applyApiKeyToUrl() for API key query params
+  → userBody overrides spec example; empty userBody falls back to spec
+  → generates cURL, JavaScript (fetch), Python (requests), Node.js (axios)
+  → window.location.origin fallback when baseUrl is empty
 ```
 
 Each endpoint gets its own `RequestStore` instance, lazily created and tracked in a `Map<string, RequestStore>` in `swaggerx-app`.
@@ -257,7 +263,7 @@ swaggerx/
 │   │   ├── parser.ts                         # OpenAPI spec fetching and parsing
 │   │   ├── normalizer.ts                     # Raw spec → SwaggerXSpec transformation
 │   │   ├── schema-resolver.ts                # $ref dereferencing + example generation
-│   │   └── code-gen.ts                       # Code sample generation (4 languages, window.location.origin fallback)
+│   │   └── code-gen.ts                       # Dynamic code sample generation (4 languages, auth/headers/body from request builder, spec example fallback, window.location.origin fallback)
 │   ├── middleware/
 │   │   ├── express.ts                        # Express router middleware (trailing slash redirect)
 │   │   ├── fastify.ts                        # Fastify plugin (trailing slash redirect)
@@ -369,7 +375,7 @@ npx pnpm dev                    # Start Vite dev server (loads Petstore spec)
 npx pnpm run typecheck          # TypeScript type checking (strict, noUnusedLocals/Params)
 
 # Testing
-npx pnpm test                   # Run all 436 tests once
+npx pnpm test                   # Run all 446 tests once
 npx pnpm run test:watch         # Run tests in watch mode
 npx vitest run test/unit/core/  # Run tests in a specific directory
 npx vitest run -t "parseSpec"   # Run tests matching a name pattern
@@ -395,7 +401,7 @@ npx pnpm run clean              # Delete dist/ folder
 
 ### Overview
 
-- **436 tests** across **59 test files**
+- **446 tests** across **59 test files**
 - **Test runner**: Vitest with happy-dom environment
 - **Component testing**: @open-wc/testing for Lit component fixtures
 - **All tests pass** with TypeScript compiling cleanly
@@ -460,6 +466,7 @@ npx pnpm run test:watch                      # Watch mode for development
 | API Key query param not sent | Comment said "handled in URL builder" but nobody did it | Fixed: `http-client.ts` appends query param to URL before fetch |
 | Auth fields not interpolated with env vars | `swaggerx-app.ts` passed `auth: state.auth` without interpolation | Fixed: all auth fields (token, username, password, apiKeyName, apiKeyValue) are now interpolated |
 | History doesn't save/restore auth | Auth config was not included in history entries | Fixed: auth saved in history, restored on click, old entries reset to "No Auth" |
+| Code samples missing auth/headers/body | Code samples were static, generated only from spec | Fixed: `generateCodeSamples()` now accepts `CodeGenOptions { auth, headers, userBody }` — code samples dynamically reflect request builder state |
 
 ## TypeScript Strictness
 

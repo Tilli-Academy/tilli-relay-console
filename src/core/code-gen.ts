@@ -1,5 +1,11 @@
-import type { Endpoint, RequestBodyDef } from './types.js';
+import type { Endpoint, RequestBodyDef, AuthConfig } from './types.js';
 import { generateExample } from './schema-resolver.js';
+
+export interface CodeGenOptions {
+  auth?: AuthConfig;
+  headers?: Record<string, string>;
+  userBody?: string;
+}
 
 /**
  * Generates code samples for an endpoint in multiple languages.
@@ -7,7 +13,10 @@ import { generateExample } from './schema-resolver.js';
 export function generateCodeSamples(
   endpoint: Endpoint,
   baseUrl: string,
+  options: CodeGenOptions = {},
 ): Record<string, string> {
+  const { auth, headers: customHeaders, userBody } = options;
+
   // If baseUrl is empty or relative, use the current page's origin
   // so code samples have a full, copy-paste-ready URL
   let resolvedBase = baseUrl;
@@ -18,15 +27,67 @@ export function generateCodeSamples(
   }
   // Remove trailing slash to avoid double slashes
   resolvedBase = resolvedBase.replace(/\/$/, '');
-  const fullUrl = `${resolvedBase}${endpoint.path}`;
-  const body = getExampleBody(endpoint.requestBody);
+  let fullUrl = `${resolvedBase}${endpoint.path}`;
+
+  // Append API key to URL if auth type is apiKey with query location
+  if (auth) {
+    fullUrl = applyApiKeyToUrl(fullUrl, auth);
+  }
+
+  // Body: user body takes precedence, then spec example
+  const body = userBody?.trim() ? userBody : getExampleBody(endpoint.requestBody);
+
+  // Build merged headers: auth headers first, then custom headers (can override)
+  const mergedHeaders: Record<string, string> = {};
+  if (auth) {
+    Object.assign(mergedHeaders, buildAuthHeaders(auth));
+  }
+  if (customHeaders) {
+    Object.assign(mergedHeaders, customHeaders);
+  }
 
   return {
-    curl: generateCurl(endpoint, fullUrl, body),
-    javascript: generateJavaScript(endpoint, fullUrl, body),
-    python: generatePython(endpoint, fullUrl, body),
-    nodejs: generateNodeJs(endpoint, fullUrl, body),
+    curl: generateCurl(endpoint, fullUrl, body, mergedHeaders),
+    javascript: generateJavaScript(endpoint, fullUrl, body, mergedHeaders),
+    python: generatePython(endpoint, fullUrl, body, mergedHeaders),
+    nodejs: generateNodeJs(endpoint, fullUrl, body, mergedHeaders),
   };
+}
+
+function buildAuthHeaders(auth: AuthConfig): Record<string, string> {
+  const headers: Record<string, string> = {};
+  switch (auth.type) {
+    case 'bearer':
+      if (auth.token) {
+        headers['Authorization'] = `Bearer ${auth.token}`;
+      }
+      break;
+    case 'basic':
+      if (auth.username) {
+        const encoded = btoa(`${auth.username}:${auth.password || ''}`);
+        headers['Authorization'] = `Basic ${encoded}`;
+      }
+      break;
+    case 'apiKey':
+      if (auth.apiKeyName && auth.apiKeyValue && auth.apiKeyIn === 'header') {
+        headers[auth.apiKeyName] = auth.apiKeyValue;
+      }
+      break;
+    case 'oauth2':
+      if (auth.token) {
+        headers['Authorization'] = `Bearer ${auth.token}`;
+      }
+      break;
+  }
+  return headers;
+}
+
+function applyApiKeyToUrl(url: string, auth: AuthConfig): string {
+  if (auth.type === 'apiKey' && auth.apiKeyIn === 'query' && auth.apiKeyName && auth.apiKeyValue) {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}${encodeURIComponent(auth.apiKeyName)}=${encodeURIComponent(auth.apiKeyValue)}`;
+  }
+  return url;
 }
 
 function getExampleBody(requestBody: RequestBodyDef | undefined): string | null {
@@ -39,19 +100,22 @@ function getExampleBody(requestBody: RequestBodyDef | undefined): string | null 
   return JSON.stringify(example, null, 2);
 }
 
-function generateCurl(endpoint: Endpoint, url: string, body: string | null): string {
+function generateCurl(endpoint: Endpoint, url: string, body: string | null, extraHeaders: Record<string, string>): string {
   const method = endpoint.method.toUpperCase();
   const lines: string[] = [`curl -X ${method} '${url}'`];
 
-  // Add content-type header if there's a body
-  if (body) {
-    lines.push(`  -H 'Content-Type: application/json'`);
+  const allHeaders: Record<string, string> = { ...extraHeaders };
+  if (body && !allHeaders['Content-Type']) {
+    allHeaders['Content-Type'] = 'application/json';
+  }
+  if (!allHeaders['Accept']) {
+    allHeaders['Accept'] = 'application/json';
   }
 
-  // Add common headers
-  lines.push(`  -H 'Accept: application/json'`);
+  for (const [key, value] of Object.entries(allHeaders)) {
+    lines.push(`  -H '${key}: ${value}'`);
+  }
 
-  // Add body
   if (body) {
     lines.push(`  -d '${body}'`);
   }
@@ -59,16 +123,18 @@ function generateCurl(endpoint: Endpoint, url: string, body: string | null): str
   return lines.join(' \\\n');
 }
 
-function generateJavaScript(endpoint: Endpoint, url: string, body: string | null): string {
+function generateJavaScript(endpoint: Endpoint, url: string, body: string | null, extraHeaders: Record<string, string>): string {
   const method = endpoint.method.toUpperCase();
-  const lines: string[] = [];
+  const allHeaders: Record<string, string> = { ...extraHeaders };
+  if (!allHeaders['Accept']) allHeaders['Accept'] = 'application/json';
+  if (body && !allHeaders['Content-Type']) allHeaders['Content-Type'] = 'application/json';
 
+  const lines: string[] = [];
   lines.push(`const response = await fetch('${url}', {`);
   lines.push(`  method: '${method}',`);
   lines.push(`  headers: {`);
-  lines.push(`    'Accept': 'application/json',`);
-  if (body) {
-    lines.push(`    'Content-Type': 'application/json',`);
+  for (const [key, value] of Object.entries(allHeaders)) {
+    lines.push(`    '${key}': '${value}',`);
   }
   lines.push(`  },`);
 
@@ -84,10 +150,16 @@ function generateJavaScript(endpoint: Endpoint, url: string, body: string | null
   return lines.join('\n');
 }
 
-function generatePython(endpoint: Endpoint, url: string, body: string | null): string {
+function generatePython(endpoint: Endpoint, url: string, body: string | null, extraHeaders: Record<string, string>): string {
   const method = endpoint.method.toLowerCase();
-  const lines: string[] = [];
+  const allHeaders: Record<string, string> = { ...extraHeaders };
+  if (!allHeaders['Accept']) allHeaders['Accept'] = 'application/json';
 
+  const headerEntries = Object.entries(allHeaders)
+    .map(([k, v]) => `'${k}': '${v}'`)
+    .join(', ');
+
+  const lines: string[] = [];
   lines.push(`import requests`);
   lines.push(``);
 
@@ -97,12 +169,12 @@ function generatePython(endpoint: Endpoint, url: string, body: string | null): s
     lines.push(`response = requests.${method}(`);
     lines.push(`    '${url}',`);
     lines.push(`    json=payload,`);
-    lines.push(`    headers={'Accept': 'application/json'}`);
+    lines.push(`    headers={${headerEntries}}`);
     lines.push(`)`);
   } else {
     lines.push(`response = requests.${method}(`);
     lines.push(`    '${url}',`);
-    lines.push(`    headers={'Accept': 'application/json'}`);
+    lines.push(`    headers={${headerEntries}}`);
     lines.push(`)`);
   }
 
@@ -112,31 +184,27 @@ function generatePython(endpoint: Endpoint, url: string, body: string | null): s
   return lines.join('\n');
 }
 
-function generateNodeJs(endpoint: Endpoint, url: string, body: string | null): string {
+function generateNodeJs(endpoint: Endpoint, url: string, body: string | null, extraHeaders: Record<string, string>): string {
   const method = endpoint.method.toUpperCase();
-  const lines: string[] = [];
+  const allHeaders: Record<string, string> = { ...extraHeaders };
+  if (!allHeaders['Accept']) allHeaders['Accept'] = 'application/json';
+  if (body && !allHeaders['Content-Type']) allHeaders['Content-Type'] = 'application/json';
 
+  const lines: string[] = [];
   lines.push(`const axios = require('axios');`);
   lines.push(``);
-
-  if (body) {
-    lines.push(`const { data } = await axios({`);
-    lines.push(`  method: '${method}',`);
-    lines.push(`  url: '${url}',`);
-    lines.push(`  headers: {`);
-    lines.push(`    'Accept': 'application/json',`);
-    lines.push(`    'Content-Type': 'application/json',`);
-    lines.push(`  },`);
-    lines.push(`  data: ${body},`);
-    lines.push(`});`);
-  } else {
-    lines.push(`const { data } = await axios({`);
-    lines.push(`  method: '${method}',`);
-    lines.push(`  url: '${url}',`);
-    lines.push(`  headers: { 'Accept': 'application/json' },`);
-    lines.push(`});`);
+  lines.push(`const { data } = await axios({`);
+  lines.push(`  method: '${method}',`);
+  lines.push(`  url: '${url}',`);
+  lines.push(`  headers: {`);
+  for (const [key, value] of Object.entries(allHeaders)) {
+    lines.push(`    '${key}': '${value}',`);
   }
-
+  lines.push(`  },`);
+  if (body) {
+    lines.push(`  data: ${body},`);
+  }
+  lines.push(`});`);
   lines.push(``);
   lines.push(`console.log(data);`);
 
