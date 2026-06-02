@@ -5,6 +5,9 @@ export interface CodeGenOptions {
   auth?: AuthConfig;
   headers?: Record<string, string>;
   userBody?: string;
+  /** Pre-resolved URL (path params substituted, env vars interpolated).
+   *  When provided, baseUrl and endpoint.path are ignored for URL construction. */
+  resolvedUrl?: string;
 }
 
 /**
@@ -17,17 +20,22 @@ export function generateCodeSamples(
 ): Record<string, string> {
   const { auth, headers: customHeaders, userBody } = options;
 
-  // If baseUrl is empty or relative, use the current page's origin
-  // so code samples have a full, copy-paste-ready URL
-  let resolvedBase = baseUrl;
-  if (!resolvedBase || resolvedBase === '/' || !resolvedBase.startsWith('http')) {
-    if (typeof window !== 'undefined' && window.location?.origin) {
-      resolvedBase = window.location.origin;
+  let fullUrl: string;
+  if (options.resolvedUrl) {
+    fullUrl = options.resolvedUrl;
+  } else {
+    // If baseUrl is empty or relative, use the current page's origin
+    // so code samples have a full, copy-paste-ready URL
+    let resolvedBase = baseUrl;
+    if (!resolvedBase || resolvedBase === '/' || !resolvedBase.startsWith('http')) {
+      if (typeof window !== 'undefined' && window.location?.origin) {
+        resolvedBase = window.location.origin;
+      }
     }
+    // Remove trailing slash to avoid double slashes
+    resolvedBase = resolvedBase.replace(/\/$/, '');
+    fullUrl = `${resolvedBase}${endpoint.path}`;
   }
-  // Remove trailing slash to avoid double slashes
-  resolvedBase = resolvedBase.replace(/\/$/, '');
-  let fullUrl = `${resolvedBase}${endpoint.path}`;
 
   // Append API key to URL if auth type is apiKey with query location
   if (auth) {

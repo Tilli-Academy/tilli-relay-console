@@ -267,4 +267,48 @@ describe('code-gen', () => {
       expect(samples.curl).toContain("X-Custom: val");
     });
   });
+
+  describe('resolvedUrl option', () => {
+    it('uses resolvedUrl instead of baseUrl + endpoint.path', () => {
+      const endpoint = makeEndpoint({ path: '/pets/{petId}' });
+      const samples = generateCodeSamples(endpoint, baseUrl, {
+        resolvedUrl: 'https://api.example.com/pets/42',
+      });
+
+      expect(samples.curl).toContain('https://api.example.com/pets/42');
+      expect(samples.curl).not.toContain('{petId}');
+    });
+
+    it('uses resolvedUrl with query params appended', () => {
+      const endpoint = makeEndpoint({ path: '/pets' });
+      const samples = generateCodeSamples(endpoint, baseUrl, {
+        resolvedUrl: 'https://api.example.com/pets?limit=10&offset=0',
+      });
+
+      expect(samples.curl).toContain('https://api.example.com/pets?limit=10&offset=0');
+    });
+
+    it('falls back to baseUrl + endpoint.path when resolvedUrl not provided', () => {
+      const endpoint = makeEndpoint({ path: '/pets' });
+      const samples = generateCodeSamples(endpoint, baseUrl);
+
+      expect(samples.curl).toContain('https://api.example.com/pets');
+    });
+
+    it('combines resolvedUrl with auth and headers', () => {
+      const endpoint = makeEndpoint({ path: '/pets/{petId}' });
+      const samples = generateCodeSamples(endpoint, baseUrl, {
+        resolvedUrl: 'https://api.example.com/pets/42',
+        auth: { type: 'bearer', token: 'resolved-token-123' },
+        headers: { 'X-Custom': 'value' },
+      });
+
+      expect(samples.curl).toContain('https://api.example.com/pets/42');
+      expect(samples.curl).toContain('Authorization: Bearer resolved-token-123');
+      expect(samples.curl).toContain('X-Custom: value');
+      expect(samples.javascript).toContain('https://api.example.com/pets/42');
+      expect(samples.python).toContain('https://api.example.com/pets/42');
+      expect(samples.nodejs).toContain('https://api.example.com/pets/42');
+    });
+  });
 });

@@ -665,11 +665,13 @@ export class SwaggerXApp extends LitElement {
                     ?requestLoading=${this._requestState.loading}
                     .response=${this._requestState.response}
                     base-url=${this._spec?.servers[0]?.url ?? ''}
+                    .envVars=${this._getActiveEnvVars()}
                   ></swaggerx-endpoint>`
                 : this._selectedEndpoint
                   ? html`<swaggerx-endpoint
                       .endpoint=${this._selectedEndpoint}
                       base-url=${this._spec?.servers[0]?.url ?? ''}
+                      .envVars=${this._getActiveEnvVars()}
                     ></swaggerx-endpoint>`
                   : html`
                       <swaggerx-empty-state

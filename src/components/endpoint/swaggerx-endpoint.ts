@@ -245,6 +245,9 @@ export class SwaggerXEndpoint extends LitElement {
   @property({ type: String, attribute: 'base-url' })
   baseUrl = '';
 
+  @property({ type: Object })
+  envVars: Record<string, string> = {};
+
   @state()
   private _docTab = '';
 
@@ -460,6 +463,9 @@ export class SwaggerXEndpoint extends LitElement {
         .auth=${this.auth}
         .headers=${this.headerPairs}
         .userBody=${this.requestBody}
+        .pathValues=${this.pathValues}
+        .queryValues=${this.queryValues}
+        .envVars=${this.envVars}
       ></swaggerx-code-samples>
     `;
   }
