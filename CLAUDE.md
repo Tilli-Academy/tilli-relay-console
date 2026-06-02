@@ -13,8 +13,8 @@ SwaggerX is a Swagger UI alternative with Postman-like UI/UX, built as an instal
 - **Authentication Support** — Bearer token, Basic auth, API Key (header or query)
 - **Response Viewer** — Color-coded status badges, response time/size, formatted JSON body, response headers table
 - **Schema Documentation** — Expandable property tree with types, constraints, descriptions; generated JSON examples
-- **Code Samples** — Dynamic snippets in cURL, JavaScript, Python, Node.js that reflect the user's auth config, custom headers, and request body from the request builder. Falls back to spec examples when no user input. Supports Bearer, Basic, API Key (header/query), and OAuth2 auth. Header merge order: auth headers → custom headers → Content-Type/Accept defaults.
-- **Request History** — Stores up to 100 requests in localStorage with full response data including auth config, click to restore saved request/response/auth, selected item highlighting, delete individual or clear all. Old entries without auth reset to "No Auth" on restore.
+- **Code Samples** — Dynamic snippets in cURL, JavaScript, Python, Node.js that reflect the user's auth config, custom headers, request body, resolved path/query params, and interpolated environment variables from the request builder. Copy-paste-ready: `{id}` becomes the actual UUID, `{{auth_token}}` becomes the real token. Falls back to spec examples when no user input. Supports Bearer, Basic, API Key (header/query), and OAuth2 auth. Header merge order: auth headers → custom headers → Content-Type/Accept defaults.
+- **Request History** — Stores up to 100 requests in localStorage with full response data including auth config, path params, and query params. Click to restore saved request/response/auth/params, selected item highlighting, delete individual or clear all. Old entries without auth reset to "No Auth" on restore.
 - **Environment Variables** — Multiple environments (Dev, Staging, Prod), `{{variable}}` interpolation in URLs, headers, body, and auth fields (token, username, password, API key name/value). Auto-save indicator in env manager modal header (debounced 500ms).
 - **Dark Mode** — Light/dark theme toggle, persisted to localStorage
 - **Fuzzy Search** — Filter endpoints instantly via fuse.js
@@ -80,7 +80,7 @@ SwaggerX is a Swagger UI alternative with Postman-like UI/UX, built as an instal
 |---|---|
 | Source code (42 components) | Done |
 | Dual build system (Vite + tsup) | Done |
-| Unit tests (446 tests, 59 files) | Done |
+| Unit tests (450 tests, 59 files) | Done |
 | Accessibility audit + fixes | Done |
 | TypeScript strict mode | Done |
 | Dev server (Vite) | Done |
@@ -155,12 +155,18 @@ Request flow:
   Response + auth config → history-store.ts → localStorage
 
 History restore:
-  Click history item → _onHistorySelect() → loads saved request + response + auth into RequestStore
+  Click history item → _onHistorySelect() → loads saved request + response + auth + pathParams + queryParams into RequestStore
   Old entries without auth → resets to { type: 'none' }
 
 Environment vars → env-interpolator.ts → replaces {{var}} in URLs, headers, body, and auth fields
-Code samples (dynamic):
-  code-gen.ts generateCodeSamples(endpoint, baseUrl, { auth, headers, userBody })
+Code samples (dynamic, fully resolved):
+  swaggerx-code-samples receives pathValues, queryValues, envVars from swaggerx-endpoint
+  → buildUrl(baseUrl, path, pathValues, queryValues) resolves path params and appends query params
+  → interpolate(url, envVars) resolves {{variable}} placeholders in URL
+  → interpolate auth fields (token, username, password, apiKeyName, apiKeyValue)
+  → interpolate header keys and values
+  → interpolate request body
+  → code-gen.ts generateCodeSamples(endpoint, baseUrl, { auth, headers, userBody, resolvedUrl })
   → buildAuthHeaders(auth) → mergedHeaders (auth → custom → Content-Type/Accept defaults)
   → applyApiKeyToUrl() for API key query params
   → userBody overrides spec example; empty userBody falls back to spec
@@ -375,7 +381,7 @@ npx pnpm dev                    # Start Vite dev server (loads Petstore spec)
 npx pnpm run typecheck          # TypeScript type checking (strict, noUnusedLocals/Params)
 
 # Testing
-npx pnpm test                   # Run all 446 tests once
+npx pnpm test                   # Run all 450 tests once
 npx pnpm run test:watch         # Run tests in watch mode
 npx vitest run test/unit/core/  # Run tests in a specific directory
 npx vitest run -t "parseSpec"   # Run tests matching a name pattern
@@ -401,7 +407,7 @@ npx pnpm run clean              # Delete dist/ folder
 
 ### Overview
 
-- **446 tests** across **59 test files**
+- **450 tests** across **59 test files**
 - **Test runner**: Vitest with happy-dom environment
 - **Component testing**: @open-wc/testing for Lit component fixtures
 - **All tests pass** with TypeScript compiling cleanly
@@ -467,6 +473,9 @@ npx pnpm run test:watch                      # Watch mode for development
 | Auth fields not interpolated with env vars | `swaggerx-app.ts` passed `auth: state.auth` without interpolation | Fixed: all auth fields (token, username, password, apiKeyName, apiKeyValue) are now interpolated |
 | History doesn't save/restore auth | Auth config was not included in history entries | Fixed: auth saved in history, restored on click, old entries reset to "No Auth" |
 | Code samples missing auth/headers/body | Code samples were static, generated only from spec | Fixed: `generateCodeSamples()` now accepts `CodeGenOptions { auth, headers, userBody }` — code samples dynamically reflect request builder state |
+| Code samples show `{id}` instead of actual value | Path params and env vars not resolved in code-gen | Fixed: `swaggerx-code-samples` resolves URL via `buildUrl()` + `interpolate()`, passes `resolvedUrl` to `generateCodeSamples()` |
+| History doesn't restore path/query params | `pathParams`/`queryParams` not saved in history entries | Fixed: `HistoryEntry.request` now includes `pathParams?` and `queryParams?`, restored in `_onHistorySelect()` |
+| API Key radio button (Header/Query) not updating | Switching between two API Key configs with different `apiKeyIn` keeps stale radio state | Fixed: changed `?checked=` (attribute binding) to `.checked=` (property binding) in `swaggerx-auth-editor.ts` |
 
 ## TypeScript Strictness
 
