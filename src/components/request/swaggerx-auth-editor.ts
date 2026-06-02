@@ -207,7 +207,7 @@ export class SwaggerXAuthEditor extends LitElement {
                   type="radio"
                   name="apiKeyIn"
                   value="header"
-                  ?checked=${this.auth.apiKeyIn === 'header'}
+                  .checked=${this.auth.apiKeyIn === 'header'}
                   @change=${() => this._onFieldChange('apiKeyIn', 'header')}
                 /> Header
               </label>
@@ -216,7 +216,7 @@ export class SwaggerXAuthEditor extends LitElement {
                   type="radio"
                   name="apiKeyIn"
                   value="query"
-                  ?checked=${this.auth.apiKeyIn === 'query'}
+                  .checked=${this.auth.apiKeyIn === 'query'}
                   @change=${() => this._onFieldChange('apiKeyIn', 'query')}
                 /> Query Param
               </label>
