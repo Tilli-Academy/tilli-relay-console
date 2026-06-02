@@ -187,6 +187,8 @@ export interface HistoryEntry {
     headers: Record<string, string>;
     body: string;
     auth?: AuthConfig;
+    pathParams?: Record<string, string>;
+    queryParams?: Record<string, string>;
   };
   response: ResponseState;
 }

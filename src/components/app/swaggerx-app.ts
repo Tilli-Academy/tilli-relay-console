@@ -464,6 +464,8 @@ export class SwaggerXApp extends LitElement {
       headers: interpolatedHeaders,
       body: state.body,
       auth: state.auth,
+      pathParams: state.pathParams,
+      queryParams: state.queryParams,
       response,
     });
   }
@@ -483,6 +485,17 @@ export class SwaggerXApp extends LitElement {
       const store = this._getOrCreateRequestStore(ep);
       if (entry.request.body) store.setBody(entry.request.body);
       store.setAuth(entry.request.auth ?? { type: 'none' });
+      // Restore path and query params
+      if (entry.request.pathParams) {
+        for (const [name, value] of Object.entries(entry.request.pathParams)) {
+          store.setPathParam(name, value);
+        }
+      }
+      if (entry.request.queryParams) {
+        for (const [name, value] of Object.entries(entry.request.queryParams)) {
+          store.setQueryParam(name, value);
+        }
+      }
       if (entry.response) store.setResponse(entry.response);
       this._requestState = { ...store.state };
     }

@@ -42,6 +42,8 @@ export class HistoryStore {
     headers: Record<string, string>;
     body: string;
     auth?: AuthConfig;
+    pathParams?: Record<string, string>;
+    queryParams?: Record<string, string>;
     response: ResponseState;
   }): void {
     const historyEntry: HistoryEntry = {
@@ -54,6 +56,8 @@ export class HistoryStore {
         headers: entry.headers,
         body: entry.body,
         auth: entry.auth,
+        pathParams: entry.pathParams,
+        queryParams: entry.queryParams,
       },
       response: entry.response,
     };
