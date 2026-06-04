@@ -306,6 +306,10 @@ export class SwaggerXApp extends LitElement {
       const baseUrl = this._spec?.servers[0]?.url ?? '';
       const fullUrl = `${baseUrl}${endpoint.path}`;
       store = new RequestStore(endpoint.method, fullUrl);
+      // Pre-fill body with {} for endpoints that accept a request body
+      if (endpoint.requestBody) {
+        store.setBody('{}');
+      }
       this._requestStores.set(endpoint.id, store);
 
       // Subscribe to state changes

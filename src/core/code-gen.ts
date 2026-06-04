@@ -42,8 +42,9 @@ export function generateCodeSamples(
     fullUrl = applyApiKeyToUrl(fullUrl, auth);
   }
 
-  // Body: user body takes precedence, then spec example
-  const body = userBody?.trim() ? userBody : getExampleBody(endpoint.requestBody);
+  // Body: use what the user typed.  For endpoints with requestBody, always
+  // include a body (even if empty) so code samples show -d / Content-Type.
+  const body = endpoint.requestBody ? (userBody ?? '') : null;
 
   // Build merged headers: auth headers first, then custom headers (can override)
   const mergedHeaders: Record<string, string> = {};
@@ -113,7 +114,7 @@ function generateCurl(endpoint: Endpoint, url: string, body: string | null, extr
   const lines: string[] = [`curl -X ${method} '${url}'`];
 
   const allHeaders: Record<string, string> = { ...extraHeaders };
-  if (body && !allHeaders['Content-Type']) {
+  if (body !== null && !allHeaders['Content-Type']) {
     allHeaders['Content-Type'] = 'application/json';
   }
   if (!allHeaders['Accept']) {
@@ -124,7 +125,7 @@ function generateCurl(endpoint: Endpoint, url: string, body: string | null, extr
     lines.push(`  -H '${key}: ${value}'`);
   }
 
-  if (body) {
+  if (body !== null) {
     lines.push(`  -d '${body}'`);
   }
 
@@ -135,7 +136,7 @@ function generateJavaScript(endpoint: Endpoint, url: string, body: string | null
   const method = endpoint.method.toUpperCase();
   const allHeaders: Record<string, string> = { ...extraHeaders };
   if (!allHeaders['Accept']) allHeaders['Accept'] = 'application/json';
-  if (body && !allHeaders['Content-Type']) allHeaders['Content-Type'] = 'application/json';
+  if (body !== null && !allHeaders['Content-Type']) allHeaders['Content-Type'] = 'application/json';
 
   const lines: string[] = [];
   lines.push(`const response = await fetch('${url}', {`);
@@ -146,7 +147,7 @@ function generateJavaScript(endpoint: Endpoint, url: string, body: string | null
   }
   lines.push(`  },`);
 
-  if (body) {
+  if (body !== null) {
     lines.push(`  body: JSON.stringify(${body}),`);
   }
 
@@ -171,7 +172,7 @@ function generatePython(endpoint: Endpoint, url: string, body: string | null, ex
   lines.push(`import requests`);
   lines.push(``);
 
-  if (body) {
+  if (body !== null) {
     lines.push(`payload = ${body}`);
     lines.push(``);
     lines.push(`response = requests.${method}(`);
@@ -196,7 +197,7 @@ function generateNodeJs(endpoint: Endpoint, url: string, body: string | null, ex
   const method = endpoint.method.toUpperCase();
   const allHeaders: Record<string, string> = { ...extraHeaders };
   if (!allHeaders['Accept']) allHeaders['Accept'] = 'application/json';
-  if (body && !allHeaders['Content-Type']) allHeaders['Content-Type'] = 'application/json';
+  if (body !== null && !allHeaders['Content-Type']) allHeaders['Content-Type'] = 'application/json';
 
   const lines: string[] = [];
   lines.push(`const axios = require('axios');`);
@@ -209,7 +210,7 @@ function generateNodeJs(endpoint: Endpoint, url: string, body: string | null, ex
     lines.push(`    '${key}': '${value}',`);
   }
   lines.push(`  },`);
-  if (body) {
+  if (body !== null) {
     lines.push(`  data: ${body},`);
   }
   lines.push(`});`);

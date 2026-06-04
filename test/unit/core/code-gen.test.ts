@@ -59,7 +59,9 @@ describe('code-gen', () => {
           },
         },
       });
-      const samples = generateCodeSamples(endpoint, baseUrl);
+      const samples = generateCodeSamples(endpoint, baseUrl, {
+        userBody: '{"name": "Buddy"}',
+      });
 
       expect(samples.curl).toContain('curl -X POST');
       expect(samples.curl).toContain("'Content-Type: application/json'");
@@ -113,7 +115,9 @@ describe('code-gen', () => {
           },
         },
       });
-      const samples = generateCodeSamples(endpoint, baseUrl);
+      const samples = generateCodeSamples(endpoint, baseUrl, {
+        userBody: '{"name": "Rex"}',
+      });
 
       expect(samples.curl).toContain('Rex');
       expect(samples.javascript).toContain('Rex');
@@ -224,7 +228,7 @@ describe('code-gen', () => {
       expect(samples.curl).not.toContain('Buddy');
     });
 
-    it('falls back to spec example when userBody is empty', () => {
+    it('includes empty -d when userBody is empty but endpoint has requestBody', () => {
       const endpoint = makeEndpoint({
         method: 'post',
         path: '/pets',
@@ -244,7 +248,9 @@ describe('code-gen', () => {
         userBody: '',
       });
 
-      expect(samples.curl).toContain('Rex');
+      expect(samples.curl).not.toContain('Rex');
+      expect(samples.curl).toContain("-d ''");
+      expect(samples.curl).toContain('Content-Type: application/json');
     });
 
     it('auth type none adds no auth header', () => {
