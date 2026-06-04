@@ -300,6 +300,16 @@ export class SwaggerXEndpoint extends LitElement {
     return tabs[0].id;
   }
 
+  override updated(changed: Map<string, unknown>) {
+    if (changed.has('endpoint') && changed.get('endpoint') != null) {
+      // Fade in when switching between endpoints (not on initial load)
+      this.animate(
+        [{ opacity: 0 }, { opacity: 1 }],
+        { duration: 200, easing: 'ease-out' },
+      );
+    }
+  }
+
   override render() {
     if (!this.endpoint) return nothing;
     const ep = this.endpoint;
@@ -358,7 +368,7 @@ export class SwaggerXEndpoint extends LitElement {
       ${this.response
         ? html`
             <div class="response-card">
-              <swaggerx-response .response=${this.response}></swaggerx-response>
+              <swaggerx-response .response=${this.response} ?loading=${this.requestLoading}></swaggerx-response>
             </div>
           `
         : nothing}

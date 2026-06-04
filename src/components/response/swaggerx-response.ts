@@ -25,6 +25,31 @@ export class SwaggerXResponse extends LitElement {
       .response-container {
         overflow: hidden;
         background: var(--sx-surface-primary);
+        position: relative;
+      }
+
+      .loading-overlay {
+        position: absolute;
+        inset: 0;
+        background: var(--sx-surface-primary, #fff);
+        opacity: 0.7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+      }
+
+      .loading-spinner {
+        width: 28px;
+        height: 28px;
+        border: 3px solid var(--sx-border);
+        border-top-color: var(--sx-accent);
+        border-radius: 50%;
+        animation: sx-spin 0.8s linear infinite;
+      }
+
+      @keyframes sx-spin {
+        to { transform: rotate(360deg); }
       }
 
       .response-header {
@@ -62,6 +87,9 @@ export class SwaggerXResponse extends LitElement {
 
   @property({ type: Object })
   response: ResponseState | null = null;
+
+  @property({ type: Boolean })
+  loading = false;
 
   @state()
   private _activeTab = 'body';
@@ -104,6 +132,7 @@ export class SwaggerXResponse extends LitElement {
 
     return html`
       <div class="response-container">
+        ${this.loading ? html`<div class="loading-overlay"><div class="loading-spinner"></div></div>` : nothing}
         <div class="response-header">
           <div class="response-title">Response</div>
           <swaggerx-response-meta

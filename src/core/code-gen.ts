@@ -42,9 +42,10 @@ export function generateCodeSamples(
     fullUrl = applyApiKeyToUrl(fullUrl, auth);
   }
 
-  // Body: use what the user typed.  For endpoints with requestBody, always
-  // include a body (even if empty) so code samples show -d / Content-Type.
-  const body = endpoint.requestBody ? (userBody ?? '') : null;
+  // Body: for POST/PUT/PATCH methods, always include a body in code samples
+  // (even if empty) so curl shows -d.  Matches Swagger UI behaviour.
+  const methodsWithBody = ['post', 'put', 'patch'];
+  const body = methodsWithBody.includes(endpoint.method) ? (userBody ?? '') : null;
 
   // Build merged headers: auth headers first, then custom headers (can override)
   const mergedHeaders: Record<string, string> = {};
