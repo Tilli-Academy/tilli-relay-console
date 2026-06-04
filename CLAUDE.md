@@ -8,12 +8,12 @@ SwaggerX is a Swagger UI alternative with Postman-like UI/UX, built as an instal
 
 ## Key Features
 
-- **API Documentation Viewer** — Loads OpenAPI 2.0/3.0/3.1 specs from URL or inline JSON/YAML, displays endpoints grouped by tags
+- **API Documentation Viewer** — Loads OpenAPI 2.0/3.0/3.1 specs from URL or inline JSON/YAML, displays endpoints grouped by tags. 200ms fade-in transition when switching between endpoints for visual feedback.
 - **Interactive Request Builder** — Method selector, URL input, path/query parameter editors, headers editor, request body editor (JSON/XML/plaintext)
 - **Authentication Support** — Bearer token, Basic auth, API Key (header or query)
-- **Response Viewer** — Color-coded status badges, response time/size, formatted JSON body, response headers table
+- **Response Viewer** — Color-coded status badges, response time/size, formatted JSON body, response headers table. Loading overlay with spinner on the response area while a repeat request is in flight, providing visible feedback that the response is being refreshed.
 - **Schema Documentation** — Expandable property tree with types, constraints, descriptions; generated JSON examples
-- **Code Samples** — Dynamic snippets in cURL, JavaScript, Python, Node.js that reflect the user's auth config, custom headers, request body, resolved path/query params, and interpolated environment variables from the request builder. Copy-paste-ready: `{id}` becomes the actual UUID, `{{auth_token}}` becomes the real token. Falls back to spec examples when no user input. Supports Bearer, Basic, API Key (header/query), and OAuth2 auth. Header merge order: auth headers → custom headers → Content-Type/Accept defaults.
+- **Code Samples** — Dynamic snippets in cURL, JavaScript, Python, Node.js that reflect the user's auth config, custom headers, request body, resolved path/query params, and interpolated environment variables from the request builder. Copy-paste-ready: `{id}` becomes the actual UUID, `{{auth_token}}` becomes the real token. POST/PUT/PATCH methods always include `-d` in curl (matching Swagger UI): body editor content → `-d '...'`, empty body → `-d ''`. Endpoints with `requestBody` in spec get body editor pre-filled with `{}`. Supports Bearer, Basic, API Key (header/query), and OAuth2 auth. Header merge order: auth headers → custom headers → Content-Type/Accept defaults.
 - **Request History** — Stores up to 100 requests in localStorage with full response data including auth config, path params, and query params. Click to restore saved request/response/auth/params, selected item highlighting, delete individual or clear all. Old entries without auth reset to "No Auth" on restore.
 - **Environment Variables** — Multiple environments (Dev, Staging, Prod), `{{variable}}` interpolation in URLs, headers, body, and auth fields (token, username, password, API key name/value). Auto-save indicator in env manager modal header (debounced 500ms).
 - **Dark Mode** — Light/dark theme toggle, persisted to localStorage
@@ -169,7 +169,7 @@ Code samples (dynamic, fully resolved):
   → code-gen.ts generateCodeSamples(endpoint, baseUrl, { auth, headers, userBody, resolvedUrl })
   → buildAuthHeaders(auth) → mergedHeaders (auth → custom → Content-Type/Accept defaults)
   → applyApiKeyToUrl() for API key query params
-  → userBody overrides spec example; empty userBody falls back to spec
+  → POST/PUT/PATCH always include body (userBody or empty string); GET/DELETE have no body
   → generates cURL, JavaScript (fetch), Python (requests), Node.js (axios)
   → window.location.origin fallback when baseUrl is empty
 ```
@@ -269,7 +269,7 @@ swaggerx/
 │   │   ├── parser.ts                         # OpenAPI spec fetching and parsing
 │   │   ├── normalizer.ts                     # Raw spec → SwaggerXSpec transformation
 │   │   ├── schema-resolver.ts                # $ref dereferencing + example generation
-│   │   └── code-gen.ts                       # Dynamic code sample generation (4 languages, auth/headers/body from request builder, spec example fallback, window.location.origin fallback)
+│   │   └── code-gen.ts                       # Dynamic code sample generation (4 languages, auth/headers/body from request builder, POST/PUT/PATCH always include -d, window.location.origin fallback)
 │   ├── middleware/
 │   │   ├── express.ts                        # Express router middleware (trailing slash redirect)
 │   │   ├── fastify.ts                        # Fastify plugin (trailing slash redirect)
@@ -476,6 +476,10 @@ npx pnpm run test:watch                      # Watch mode for development
 | Code samples show `{id}` instead of actual value | Path params and env vars not resolved in code-gen | Fixed: `swaggerx-code-samples` resolves URL via `buildUrl()` + `interpolate()`, passes `resolvedUrl` to `generateCodeSamples()` |
 | History doesn't restore path/query params | `pathParams`/`queryParams` not saved in history entries | Fixed: `HistoryEntry.request` now includes `pathParams?` and `queryParams?`, restored in `_onHistorySelect()` |
 | API Key radio button (Header/Query) not updating | Switching between two API Key configs with different `apiKeyIn` keeps stale radio state | Fixed: changed `?checked=` (attribute binding) to `.checked=` (property binding) in `swaggerx-auth-editor.ts` |
+| Code samples show spec example when body editor is empty | `code-gen.ts` fell back to `getExampleBody()` when `userBody` was empty | Fixed: POST/PUT/PATCH methods always use `userBody` (or empty string). No spec example fallback. Body editor pre-filled with `{}` for endpoints with `requestBody`. |
+| Code samples missing `-d` for POST without `requestBody` | Body logic checked `endpoint.requestBody` instead of HTTP method | Fixed: changed to check `['post', 'put', 'patch'].includes(endpoint.method)` — all POST methods get `-d` in curl |
+| No visual feedback on repeat Send click | Response area updated silently — user couldn't tell it changed | Fixed: loading overlay with spinner on response area while request is in flight (`swaggerx-response.ts`) |
+| No visual feedback when switching endpoints | Content changed instantly with no transition | Fixed: 200ms fade-in animation via Web Animations API in `swaggerx-endpoint.ts` `updated()` lifecycle |
 
 ## TypeScript Strictness
 
