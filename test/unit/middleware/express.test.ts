@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { swaggerX } from '../../../src/middleware/express.js';
+import { runDocs } from '../../../src/middleware/express.js';
 
 describe('middleware/express', () => {
-  it('exports swaggerX function', () => {
-    expect(typeof swaggerX).toBe('function');
+  it('exports runDocs function', () => {
+    expect(typeof runDocs).toBe('function');
   });
 
   it('returns a router with GET / handler', () => {
-    const router = swaggerX({ specUrl: '/openapi.json' });
+    const router = runDocs({ specUrl: '/openapi.json' });
     expect(router).toBeTruthy();
     // Express Router has a stack of layers
     expect(router.stack).toBeDefined();
@@ -15,7 +15,7 @@ describe('middleware/express', () => {
   });
 
   it('accepts empty options', () => {
-    const router = swaggerX();
+    const router = runDocs();
     expect(router).toBeTruthy();
   });
 });

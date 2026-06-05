@@ -1,12 +1,12 @@
 /**
- * SwaggerX core type definitions.
+ * RunDocs core type definitions.
  * These interfaces represent the internal data model that all components consume.
  */
 
 export type HttpMethod = 'get' | 'post' | 'put' | 'patch' | 'delete' | 'head' | 'options';
 
 /** The normalized spec model consumed by all components */
-export interface SwaggerXSpec {
+export interface RunDocsSpec {
   info: ApiInfo;
   servers: ServerInfo[];
   tags: TagGroup[];

@@ -1,11 +1,11 @@
 import type { FastifyInstance, FastifyPluginCallback } from 'fastify';
-import { getDistDir, renderHTML, type SwaggerXOptions } from './common.js';
+import { getDistDir, renderHTML, type RunDocsOptions } from './common.js';
 
-export type { SwaggerXOptions };
+export type { RunDocsOptions };
 
-const swaggerXPlugin: FastifyPluginCallback<SwaggerXOptions> = (
+const runDocsPlugin: FastifyPluginCallback<RunDocsOptions> = (
   fastify: FastifyInstance,
-  opts: SwaggerXOptions,
+  opts: RunDocsOptions,
   done: (err?: Error) => void,
 ) => {
   const distDir = getDistDir();
@@ -31,23 +31,23 @@ const swaggerXPlugin: FastifyPluginCallback<SwaggerXOptions> = (
 };
 
 /**
- * Fastify plugin that serves the SwaggerX UI.
+ * Fastify plugin that serves the RunDocs UI.
  *
  * @example
  * ```ts
  * import Fastify from 'fastify';
- * import { swaggerX } from 'swaggerx/fastify';
+ * import { runDocs } from 'rundocs/fastify';
  *
  * const app = Fastify();
- * app.register(swaggerX, { prefix: '/docs', specUrl: '/openapi.json' });
+ * app.register(runDocs, { prefix: '/docs', specUrl: '/openapi.json' });
  * ```
  */
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const fp = require('fastify-plugin') as typeof import('fastify-plugin')['default'];
 
-export const swaggerX = fp(swaggerXPlugin, {
-  name: 'swaggerx',
+export const runDocs = fp(runDocsPlugin, {
+  name: 'rundocs',
   fastify: '>=4.0.0',
 });
 
-export default swaggerX;
+export default runDocs;

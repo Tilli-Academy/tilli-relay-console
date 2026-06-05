@@ -4,14 +4,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const storage: Record<string, string> = {};
 vi.mock('../../../src/utils/local-storage.js', () => ({
   getItem: (key: string, fallback: unknown) => {
-    const val = storage[`swaggerx:${key}`];
+    const val = storage[`rundocs:${key}`];
     return val ? JSON.parse(val) : fallback;
   },
   setItem: (key: string, value: unknown) => {
-    storage[`swaggerx:${key}`] = JSON.stringify(value);
+    storage[`rundocs:${key}`] = JSON.stringify(value);
   },
   removeItem: (key: string) => {
-    delete storage[`swaggerx:${key}`];
+    delete storage[`rundocs:${key}`];
   },
 }));
 
@@ -35,7 +35,7 @@ describe('UIStore', () => {
   });
 
   it('loads persisted state from localStorage', () => {
-    storage['swaggerx:ui-state'] = JSON.stringify({
+    storage['rundocs:ui-state'] = JSON.stringify({
       theme: 'dark',
       sidebarCollapsed: true,
       splitRatio: 0.35,
@@ -69,7 +69,7 @@ describe('UIStore', () => {
     const store = new UIStore();
     store.setTheme('dark');
 
-    const persisted = JSON.parse(storage['swaggerx:ui-state']);
+    const persisted = JSON.parse(storage['rundocs:ui-state']);
     expect(persisted.theme).toBe('dark');
   });
 
@@ -88,7 +88,7 @@ describe('UIStore', () => {
     const store = new UIStore();
     store.toggleSidebar();
 
-    const persisted = JSON.parse(storage['swaggerx:ui-state']);
+    const persisted = JSON.parse(storage['rundocs:ui-state']);
     expect(persisted.sidebarCollapsed).toBe(true);
   });
 
@@ -150,7 +150,7 @@ describe('UIStore', () => {
     const store = new UIStore();
     store.setSplitRatio(0.4);
 
-    const persisted = JSON.parse(storage['swaggerx:ui-state']);
+    const persisted = JSON.parse(storage['rundocs:ui-state']);
     expect(persisted.splitRatio).toBe(0.4);
   });
 

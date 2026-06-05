@@ -4,14 +4,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const storage: Record<string, string> = {};
 vi.mock('../../../src/utils/local-storage.js', () => ({
   getItem: (key: string, fallback: unknown) => {
-    const val = storage[`swaggerx:${key}`];
+    const val = storage[`rundocs:${key}`];
     return val ? JSON.parse(val) : fallback;
   },
   setItem: (key: string, value: unknown) => {
-    storage[`swaggerx:${key}`] = JSON.stringify(value);
+    storage[`rundocs:${key}`] = JSON.stringify(value);
   },
   removeItem: (key: string) => {
-    delete storage[`swaggerx:${key}`];
+    delete storage[`rundocs:${key}`];
   },
 }));
 
@@ -159,8 +159,8 @@ describe('EnvStore', () => {
     const store = new EnvStore();
     store.addEnvironment('Production', { apiKey: 'abc' });
 
-    expect(storage['swaggerx:environments']).toBeDefined();
-    const persisted = JSON.parse(storage['swaggerx:environments']);
+    expect(storage['rundocs:environments']).toBeDefined();
+    const persisted = JSON.parse(storage['rundocs:environments']);
     expect(persisted).toHaveLength(1);
     expect(persisted[0].name).toBe('Production');
   });
@@ -170,8 +170,8 @@ describe('EnvStore', () => {
     const env = store.addEnvironment('Production');
     store.setActive(env.id);
 
-    expect(storage['swaggerx:active-env']).toBeDefined();
-    const activeId = JSON.parse(storage['swaggerx:active-env']);
+    expect(storage['rundocs:active-env']).toBeDefined();
+    const activeId = JSON.parse(storage['rundocs:active-env']);
     expect(activeId).toBe(env.id);
   });
 
@@ -180,8 +180,8 @@ describe('EnvStore', () => {
       { id: 'env-1', name: 'Production', variables: { apiKey: 'abc' } },
       { id: 'env-2', name: 'Staging', variables: { apiKey: 'def' } },
     ];
-    storage['swaggerx:environments'] = JSON.stringify(envData);
-    storage['swaggerx:active-env'] = JSON.stringify('env-1');
+    storage['rundocs:environments'] = JSON.stringify(envData);
+    storage['rundocs:active-env'] = JSON.stringify('env-1');
 
     const store = new EnvStore();
 

@@ -6,8 +6,8 @@ describe('middleware/common', () => {
     it('returns valid HTML with default title', () => {
       const html = renderHTML();
       expect(html).toContain('<!DOCTYPE html>');
-      expect(html).toContain('<title>SwaggerX — API Documentation</title>');
-      expect(html).toContain('<swaggerx-app');
+      expect(html).toContain('<title>RunDocs — API Documentation</title>');
+      expect(html).toContain('<rundocs-app');
     });
 
     it('uses custom title', () => {
@@ -28,25 +28,25 @@ describe('middleware/common', () => {
     it('injects inline spec as script when spec is provided', () => {
       const spec = { openapi: '3.0.0', info: { title: 'Test', version: '1.0' } };
       const html = renderHTML({ spec });
-      expect(html).toContain('window.__SWAGGERX_SPEC__');
+      expect(html).toContain('window.__RUNDOCS_SPEC__');
       expect(html).toContain('"openapi":"3.0.0"');
     });
 
     it('uses relative paths for assets regardless of routePrefix', () => {
       const html = renderHTML({ routePrefix: '/docs' });
-      expect(html).toContain('href="./swaggerx.css"');
-      expect(html).toContain("from './swaggerx.es.js'");
+      expect(html).toContain('href="./rundocs.css"');
+      expect(html).toContain("from './rundocs.es.js'");
     });
 
     it('uses relative paths for assets by default', () => {
       const html = renderHTML();
-      expect(html).toContain('href="./swaggerx.css"');
-      expect(html).toContain("from './swaggerx.es.js'");
+      expect(html).toContain('href="./rundocs.css"');
+      expect(html).toContain("from './rundocs.es.js'");
     });
 
-    it('calls defineSwaggerX to register all components', () => {
+    it('calls defineRunDocs to register all components', () => {
       const html = renderHTML();
-      expect(html).toContain('defineSwaggerX()');
+      expect(html).toContain('defineRunDocs()');
     });
 
     it('escapes HTML in title', () => {
@@ -55,10 +55,10 @@ describe('middleware/common', () => {
       expect(html).not.toContain('<script>alert');
     });
 
-    it('includes swaggerx-app element', () => {
+    it('includes rundocs-app element', () => {
       const html = renderHTML();
-      expect(html).toContain('<swaggerx-app');
-      expect(html).toContain('</swaggerx-app>');
+      expect(html).toContain('<rundocs-app');
+      expect(html).toContain('</rundocs-app>');
     });
   });
 

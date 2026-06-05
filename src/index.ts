@@ -1,12 +1,12 @@
-// SwaggerX — Main entry point
+// RunDocs — Main entry point
 import './styles/global.css';
 
-export { SwaggerXApp } from './components/app/swaggerx-app.js';
-export { defineSwaggerX } from './define.js';
+export { RunDocsApp } from './components/app/rundocs-app.js';
+export { defineRunDocs } from './define.js';
 
 // Re-export types
 export type {
-  SwaggerXSpec,
+  RunDocsSpec,
   Endpoint,
   TagGroup,
   Parameter,

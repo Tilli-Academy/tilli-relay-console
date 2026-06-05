@@ -4,14 +4,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const storage: Record<string, string> = {};
 vi.mock('../../../src/utils/local-storage.js', () => ({
   getItem: (key: string, fallback: unknown) => {
-    const val = storage[`swaggerx:${key}`];
+    const val = storage[`rundocs:${key}`];
     return val ? JSON.parse(val) : fallback;
   },
   setItem: (key: string, value: unknown) => {
-    storage[`swaggerx:${key}`] = JSON.stringify(value);
+    storage[`rundocs:${key}`] = JSON.stringify(value);
   },
   removeItem: (key: string) => {
-    delete storage[`swaggerx:${key}`];
+    delete storage[`rundocs:${key}`];
   },
 }));
 
@@ -116,14 +116,14 @@ describe('HistoryStore', () => {
     const store = new HistoryStore();
     store.add(makeEntry());
 
-    expect(storage['swaggerx:history']).toBeDefined();
-    const persisted = JSON.parse(storage['swaggerx:history']);
+    expect(storage['rundocs:history']).toBeDefined();
+    const persisted = JSON.parse(storage['rundocs:history']);
     expect(persisted).toHaveLength(1);
   });
 
   it('loads entries from localStorage on construction', () => {
     // Pre-populate storage
-    storage['swaggerx:history'] = JSON.stringify([
+    storage['rundocs:history'] = JSON.stringify([
       {
         id: 'test-1',
         timestamp: Date.now(),

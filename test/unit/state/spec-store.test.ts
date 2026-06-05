@@ -12,12 +12,12 @@ vi.mock('../../../src/core/normalizer.js', () => ({
 import { SpecStore } from '../../../src/state/spec-store.js';
 import { parseSpec } from '../../../src/core/parser.js';
 import { normalize } from '../../../src/core/normalizer.js';
-import type { SwaggerXSpec } from '../../../src/core/types.js';
+import type { RunDocsSpec } from '../../../src/core/types.js';
 
 const mockParseSpec = vi.mocked(parseSpec);
 const mockNormalize = vi.mocked(normalize);
 
-const MOCK_SPEC: SwaggerXSpec = {
+const MOCK_SPEC: RunDocsSpec = {
   info: { title: 'Petstore', version: '1.0.0' },
   servers: [{ url: 'https://api.example.com' }],
   tags: [],

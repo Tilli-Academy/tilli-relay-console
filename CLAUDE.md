@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-SwaggerX is a Swagger UI alternative with Postman-like UI/UX, built as an installable npm package using Lit web components. Developers point it at an OpenAPI spec (2.0/3.0/3.1) and get interactive API documentation with a built-in request builder, history, and environment variables.
+RunDocs is a Swagger UI alternative with Postman-like UI/UX, built as an installable npm package using Lit web components. Developers point it at an OpenAPI spec (2.0/3.0/3.1) and get interactive API documentation with a built-in request builder, history, and environment variables.
 
 ## Key Features
 
@@ -19,7 +19,7 @@ SwaggerX is a Swagger UI alternative with Postman-like UI/UX, built as an instal
 - **Dark Mode** — Light/dark theme toggle, persisted to localStorage
 - **Fuzzy Search** — Filter endpoints instantly via fuse.js
 - **Resizable Split Pane** — Draggable sidebar/main divider, ratio persisted
-- **Server Middleware** — Express middleware and Fastify plugin for mounting SwaggerX in Node.js apps, supports both `specUrl` and inline `spec` options, proxy-safe with relative asset paths and trailing slash redirect
+- **Server Middleware** — Express middleware and Fastify plugin for mounting RunDocs in Node.js apps, supports both `specUrl` and inline `spec` options, proxy-safe with relative asset paths and trailing slash redirect
 - **Accessibility** — ARIA labels, keyboard navigation, semantic HTML, focus management
 
 ## Technology Stack
@@ -98,7 +98,7 @@ SwaggerX is a Swagger UI alternative with Postman-like UI/UX, built as an instal
 
 ### Build Outputs
 
-- **Frontend**: `dist/swaggerx.es.js` (ES module), `dist/swaggerx.js` (UMD bundle), `dist/swaggerx.css` — 272.5KB gzipped
+- **Frontend**: `dist/rundocs.es.js` (ES module), `dist/rundocs.js` (UMD bundle), `dist/rundocs.css` — 272.5KB gzipped
 - **Middleware**: `dist/middleware/{express,fastify}.{js,cjs}` with TypeScript declarations
 - **Types**: `dist/middleware/{express,fastify}.d.ts` (middleware only — no `dist/index.d.ts` yet, needed before npm publish)
 
@@ -109,7 +109,7 @@ SwaggerX is a Swagger UI alternative with Postman-like UI/UX, built as an instal
   ".":           { "types", "import" (ES), "require" (UMD) },
   "./express":   { "types", "import", "require" },
   "./fastify":   { "types", "import", "require" },
-  "./style.css": "./dist/swaggerx.css"
+  "./style.css": "./dist/rundocs.css"
 }
 ```
 
@@ -118,7 +118,7 @@ SwaggerX is a Swagger UI alternative with Postman-like UI/UX, built as an instal
 ### Dual Build System
 
 The project produces two separate outputs:
-- **Frontend** (Vite): Builds `dist/swaggerx.es.js` (code-split ES modules) and `dist/swaggerx.js` (single UMD bundle) for browser use
+- **Frontend** (Vite): Builds `dist/rundocs.es.js` (code-split ES modules) and `dist/rundocs.js` (single UMD bundle) for browser use
 - **Middleware** (tsup): Builds `dist/middleware/{express,fastify}.{js,cjs}` for Node.js server integration
 
 Middleware files use `require()` for framework imports (express, fastify-plugin) instead of top-level `import` to avoid Vite trying to resolve them during the frontend build. Type-only imports are used for TypeScript types from these frameworks.
@@ -126,20 +126,20 @@ Middleware files use `require()` for framework imports (express, fastify-plugin)
 ### Component Architecture
 
 All 42 UI components are Lit web components using Shadow DOM. They follow this pattern:
-- `@customElement('swaggerx-*')` decorator for auto-registration
+- `@customElement('rundocs-*')` decorator for auto-registration
 - Styles via Lit's `css` tag (not external CSS files) using `--sx-*` CSS custom properties for theming
 - `@property()` for public reactive attributes, `@state()` for private state
 - Events bubble up via `CustomEvent` with `{ bubbles: true, composed: true }`
 
 ### State Management
 
-Uses `@lit/context` for downward data flow from `swaggerx-app` (root) to all descendants:
+Uses `@lit/context` for downward data flow from `rundocs-app` (root) to all descendants:
 - **specContext** — parsed OpenAPI spec
 - **historyContext** — request history entries
 - **envContext** — environments + active environment ID
 - **uiContext** — theme, sidebar state, endpoint selection, history selection
 
-State stores (`src/state/`) are plain classes with `subscribe()`/`notify()` patterns and localStorage persistence. The root `swaggerx-app` component owns store instances and provides context values.
+State stores (`src/state/`) are plain classes with `subscribe()`/`notify()` patterns and localStorage persistence. The root `rundocs-app` component owns store instances and provides context values.
 
 ### Data Flow
 
@@ -160,7 +160,7 @@ History restore:
 
 Environment vars → env-interpolator.ts → replaces {{var}} in URLs, headers, body, and auth fields
 Code samples (dynamic, fully resolved):
-  swaggerx-code-samples receives pathValues, queryValues, envVars from swaggerx-endpoint
+  rundocs-code-samples receives pathValues, queryValues, envVars from rundocs-endpoint
   → buildUrl(baseUrl, path, pathValues, queryValues) resolves path params and appends query params
   → interpolate(url, envVars) resolves {{variable}} placeholders in URL
   → interpolate auth fields (token, username, password, apiKeyName, apiKeyValue)
@@ -174,7 +174,7 @@ Code samples (dynamic, fully resolved):
   → window.location.origin fallback when baseUrl is empty
 ```
 
-Each endpoint gets its own `RequestStore` instance, lazily created and tracked in a `Map<string, RequestStore>` in `swaggerx-app`.
+Each endpoint gets its own `RequestStore` instance, lazily created and tracked in a `Map<string, RequestStore>` in `rundocs-app`.
 
 ### Syntax Highlighting Architecture
 
@@ -189,18 +189,18 @@ Both systems share the same `--sx-syntax-*` CSS variables from `src/styles/theme
 
 ### Middleware Architecture
 
-The Express and Fastify middleware serve SwaggerX as a self-contained UI at a mount path (e.g., `/docs`). Key design decisions:
+The Express and Fastify middleware serve RunDocs as a self-contained UI at a mount path (e.g., `/docs`). Key design decisions:
 
-- **Relative asset paths** — HTML references CSS/JS as `./swaggerx.css` and `./swaggerx.es.js` (not absolute paths like `/docs/swaggerx.css`). This ensures the UI works correctly behind reverse proxies and remote dev environments where the server may be accessed via a different host/path.
-- **Trailing slash redirect** — Requests to `/docs` are redirected (301) to `/docs/`. Without the trailing slash, the browser resolves relative paths against the wrong directory (e.g., `./swaggerx.css` becomes `/swaggerx.css` instead of `/docs/swaggerx.css`).
-- **`defineSwaggerX()` in HTML** — The HTML template includes an inline ES module that imports and calls `defineSwaggerX()` to register all 42 custom elements. Without this, only `<swaggerx-app>` would be registered and child components would render as empty tags.
-- **`customElements.whenDefined()`** — The inline spec is set on the `<swaggerx-app>` element only after `customElements.whenDefined('swaggerx-app')` resolves. This ensures the Lit component class is registered and the `spec` property setter triggers reactivity correctly.
-- **Inline spec support** — The middleware accepts a `spec` option (parsed OpenAPI object) which is embedded as `window.__SWAGGERX_SPEC__` in the HTML. This avoids a separate browser request for the spec file, which can fail behind proxies. The `specUrl` option is also supported for fetching specs via URL.
+- **Relative asset paths** — HTML references CSS/JS as `./rundocs.css` and `./rundocs.es.js` (not absolute paths like `/docs/rundocs.css`). This ensures the UI works correctly behind reverse proxies and remote dev environments where the server may be accessed via a different host/path.
+- **Trailing slash redirect** — Requests to `/docs` are redirected (301) to `/docs/`. Without the trailing slash, the browser resolves relative paths against the wrong directory (e.g., `./rundocs.css` becomes `/rundocs.css` instead of `/docs/rundocs.css`).
+- **`defineRunDocs()` in HTML** — The HTML template includes an inline ES module that imports and calls `defineRunDocs()` to register all 42 custom elements. Without this, only `<rundocs-app>` would be registered and child components would render as empty tags.
+- **`customElements.whenDefined()`** — The inline spec is set on the `<rundocs-app>` element only after `customElements.whenDefined('rundocs-app')` resolves. This ensures the Lit component class is registered and the `spec` property setter triggers reactivity correctly.
+- **Inline spec support** — The middleware accepts a `spec` option (parsed OpenAPI object) which is embedded as `window.__RUNDOCS_SPEC__` in the HTML. This avoids a separate browser request for the spec file, which can fail behind proxies. The `specUrl` option is also supported for fetching specs via URL.
 
 ### Key Conventions
 
 - **Import paths**: Always use `.js` extension in imports (TypeScript compiles but runtime needs `.js`)
-- **Component naming**: `swaggerx-*` prefix, kebab-case. Class name: `SwaggerX*`, PascalCase
+- **Component naming**: `rundocs-*` prefix, kebab-case. Class name: `RunDocs*`, PascalCase
 - **Event naming**: kebab-case matching the action (`history-select`, `env-add`, `theme-toggle`)
 - **No sibling communication**: Components never talk directly. Child fires event → parent updates context → sibling re-renders
 - **Middleware imports**: Server framework dependencies (express, fastify) use `require()` at runtime, never top-level `import`, since users provide these packages themselves
@@ -208,72 +208,72 @@ The Express and Fastify middleware serve SwaggerX as a self-contained UI at a mo
 ## Project Structure
 
 ```
-swaggerx/
+rundocs/
 ├── src/
 │   ├── components/
 │   │   ├── app/
-│   │   │   └── swaggerx-app.ts              # Root component — owns contexts, parses spec (specUrl or inline spec property)
+│   │   │   └── rundocs-app.ts              # Root component — owns contexts, parses spec (specUrl or inline spec property)
 │   │   ├── code/
-│   │   │   ├── swaggerx-code-block.ts        # Single code snippet display
-│   │   │   └── swaggerx-code-samples.ts      # Multi-language code sample tabs
+│   │   │   ├── rundocs-code-block.ts        # Single code snippet display
+│   │   │   └── rundocs-code-samples.ts      # Multi-language code sample tabs
 │   │   ├── endpoint/
-│   │   │   ├── swaggerx-endpoint.ts          # Full endpoint view with doc tabs (Request Body, Responses, Code)
-│   │   │   ├── swaggerx-method-badge.ts      # Colored HTTP method label
-│   │   │   ├── swaggerx-path-display.ts      # Path with highlighted parameters
-│   │   │   └── swaggerx-description.ts       # Markdown description renderer
+│   │   │   ├── rundocs-endpoint.ts          # Full endpoint view with doc tabs (Request Body, Responses, Code)
+│   │   │   ├── rundocs-method-badge.ts      # Colored HTTP method label
+│   │   │   ├── rundocs-path-display.ts      # Path with highlighted parameters
+│   │   │   └── rundocs-description.ts       # Markdown description renderer
 │   │   ├── env/
-│   │   │   ├── swaggerx-env-manager.ts       # Environment editor modal (auto-save indicator in header, debounced)
-│   │   │   └── swaggerx-env-selector.ts      # Active environment dropdown
+│   │   │   ├── rundocs-env-manager.ts       # Environment editor modal (auto-save indicator in header, debounced)
+│   │   │   └── rundocs-env-selector.ts      # Active environment dropdown
 │   │   ├── history/
-│   │   │   ├── swaggerx-history-list.ts      # Request history panel (selectedId for highlight)
-│   │   │   └── swaggerx-history-item.ts      # Single history entry (selected state with accent border)
+│   │   │   ├── rundocs-history-list.ts      # Request history panel (selectedId for highlight)
+│   │   │   └── rundocs-history-item.ts      # Single history entry (selected state with accent border)
 │   │   ├── layout/
-│   │   │   ├── swaggerx-header.ts            # Top navigation bar
-│   │   │   ├── swaggerx-sidebar.ts           # Left sidebar container
-│   │   │   ├── swaggerx-main.ts              # Right content area
-│   │   │   └── swaggerx-split-pane.ts        # Resizable pane divider
+│   │   │   ├── rundocs-header.ts            # Top navigation bar
+│   │   │   ├── rundocs-sidebar.ts           # Left sidebar container
+│   │   │   ├── rundocs-main.ts              # Right content area
+│   │   │   └── rundocs-split-pane.ts        # Resizable pane divider
 │   │   ├── navigation/
-│   │   │   ├── swaggerx-toc.ts               # API overview / table of contents
-│   │   │   ├── swaggerx-search.ts            # Fuzzy endpoint search
-│   │   │   ├── swaggerx-tag-group.ts         # Collapsible endpoint group
-│   │   │   └── swaggerx-endpoint-item.ts     # Single endpoint list item
+│   │   │   ├── rundocs-toc.ts               # API overview / table of contents
+│   │   │   ├── rundocs-search.ts            # Fuzzy endpoint search
+│   │   │   ├── rundocs-tag-group.ts         # Collapsible endpoint group
+│   │   │   └── rundocs-endpoint-item.ts     # Single endpoint list item
 │   │   ├── request/
-│   │   │   ├── swaggerx-request-bar.ts       # Method dropdown + URL input + Send
-│   │   │   ├── swaggerx-request-tabs.ts      # Params/Headers/Auth/Body tabs
-│   │   │   ├── swaggerx-params-editor.ts     # Path and query parameter editor
-│   │   │   ├── swaggerx-headers-editor.ts    # Request header key-value editor
-│   │   │   ├── swaggerx-auth-editor.ts       # Auth config (Bearer/Basic/API Key)
-│   │   │   ├── swaggerx-body-editor.ts       # Request body editor
-│   │   │   └── swaggerx-send-button.ts       # Send button with loading state
+│   │   │   ├── rundocs-request-bar.ts       # Method dropdown + URL input + Send
+│   │   │   ├── rundocs-request-tabs.ts      # Params/Headers/Auth/Body tabs
+│   │   │   ├── rundocs-params-editor.ts     # Path and query parameter editor
+│   │   │   ├── rundocs-headers-editor.ts    # Request header key-value editor
+│   │   │   ├── rundocs-auth-editor.ts       # Auth config (Bearer/Basic/API Key)
+│   │   │   ├── rundocs-body-editor.ts       # Request body editor
+│   │   │   └── rundocs-send-button.ts       # Send button with loading state
 │   │   ├── response/
-│   │   │   ├── swaggerx-response.ts          # Response container with tabs
-│   │   │   ├── swaggerx-response-meta.ts     # Status code, time, size
-│   │   │   ├── swaggerx-response-headers.ts  # Response headers table
-│   │   │   ├── swaggerx-response-body.ts     # Formatted response body
-│   │   │   └── swaggerx-status-badge.ts      # Color-coded status badge
+│   │   │   ├── rundocs-response.ts          # Response container with tabs
+│   │   │   ├── rundocs-response-meta.ts     # Status code, time, size
+│   │   │   ├── rundocs-response-headers.ts  # Response headers table
+│   │   │   ├── rundocs-response-body.ts     # Formatted response body
+│   │   │   └── rundocs-status-badge.ts      # Color-coded status badge
 │   │   ├── schema/
-│   │   │   ├── swaggerx-schema-view.ts       # Schema tree + example tabs
-│   │   │   └── swaggerx-schema-property.ts   # Single schema property (recursive)
+│   │   │   ├── rundocs-schema-view.ts       # Schema tree + example tabs
+│   │   │   └── rundocs-schema-property.ts   # Single schema property (recursive)
 │   │   └── shared/
-│   │       ├── swaggerx-icon.ts              # SVG icon component (17 icons)
-│   │       ├── swaggerx-tabs.ts              # Reusable tab switcher
-│   │       ├── swaggerx-modal.ts             # Modal dialog (uses `heading` prop, not `title` — avoids browser tooltip)
-│   │       ├── swaggerx-tooltip.ts           # Hover tooltip
-│   │       ├── swaggerx-copy-button.ts       # Copy-to-clipboard button
-│   │       ├── swaggerx-badge.ts             # Generic colored badge
-│   │       ├── swaggerx-loading.ts           # Loading spinner
-│   │       ├── swaggerx-empty-state.ts       # Empty state placeholder
-│   │       └── swaggerx-key-value-editor.ts  # Reusable key-value pair editor
+│   │       ├── rundocs-icon.ts              # SVG icon component (17 icons)
+│   │       ├── rundocs-tabs.ts              # Reusable tab switcher
+│   │       ├── rundocs-modal.ts             # Modal dialog (uses `heading` prop, not `title` — avoids browser tooltip)
+│   │       ├── rundocs-tooltip.ts           # Hover tooltip
+│   │       ├── rundocs-copy-button.ts       # Copy-to-clipboard button
+│   │       ├── rundocs-badge.ts             # Generic colored badge
+│   │       ├── rundocs-loading.ts           # Loading spinner
+│   │       ├── rundocs-empty-state.ts       # Empty state placeholder
+│   │       └── rundocs-key-value-editor.ts  # Reusable key-value pair editor
 │   ├── core/
 │   │   ├── types.ts                          # TypeScript interfaces
 │   │   ├── parser.ts                         # OpenAPI spec fetching and parsing
-│   │   ├── normalizer.ts                     # Raw spec → SwaggerXSpec transformation
+│   │   ├── normalizer.ts                     # Raw spec → RunDocsSpec transformation
 │   │   ├── schema-resolver.ts                # $ref dereferencing + example generation
 │   │   └── code-gen.ts                       # Dynamic code sample generation (4 languages, auth/headers/body from request builder, POST/PUT/PATCH always include -d, window.location.origin fallback)
 │   ├── middleware/
 │   │   ├── express.ts                        # Express router middleware (trailing slash redirect)
 │   │   ├── fastify.ts                        # Fastify plugin (trailing slash redirect)
-│   │   └── common.ts                         # Shared HTML renderer (relative paths, defineSwaggerX, inline spec)
+│   │   └── common.ts                         # Shared HTML renderer (relative paths, defineRunDocs, inline spec)
 │   ├── state/
 │   │   ├── contexts.ts                       # Lit context definitions
 │   │   ├── spec-store.ts                     # Parsed spec state
@@ -301,8 +301,8 @@ swaggerx/
 │
 ├── test/
 │   ├── unit/
-│   │   ├── components/                       # 42 component test files (swaggerx-app covered by E2E)
-│   │   │   ├── app/                          # (no unit test — swaggerx-app tested via Playwright E2E)
+│   │   ├── components/                       # 42 component test files (rundocs-app covered by E2E)
+│   │   │   ├── app/                          # (no unit test — rundocs-app tested via Playwright E2E)
 │   │   │   ├── code/                         # code-block, code-samples tests
 │   │   │   ├── endpoint/                     # endpoint, method-badge, path-display, description tests
 │   │   │   ├── env/                          # env-manager, env-selector tests
@@ -353,7 +353,7 @@ swaggerx/
 ```bash
 # 1. Clone the repository
 git clone <repo-url>
-cd swaggerx
+cd rundocs
 
 # 2. Install dependencies
 npx pnpm install
@@ -416,7 +416,7 @@ npx pnpm run clean              # Delete dist/ folder
 
 | Category | Files | What is tested |
 |---|---|---|
-| Components | 42 | 41 of 42 UI components — rendering, events, properties, user interaction (swaggerx-app covered by E2E tests) |
+| Components | 42 | 41 of 42 UI components — rendering, events, properties, user interaction (rundocs-app covered by E2E tests) |
 | Core | 4 | Spec parsing (JSON/YAML), normalization, schema resolution, code generation |
 | State | 5 | All stores — env, history, request, spec, UI state management |
 | Middleware | 3 | Express middleware, Fastify plugin, shared HTML renderer |
@@ -427,9 +427,9 @@ npx pnpm run clean              # Delete dist/ folder
 ```typescript
 // Component test pattern
 import { fixture, html } from '@open-wc/testing';
-import '../../../../src/components/shared/swaggerx-tabs.js';  // side-effect import registers element
+import '../../../../src/components/shared/rundocs-tabs.js';  // side-effect import registers element
 
-const el = await fixture<SwaggerXTabs>(html`<swaggerx-tabs .tabs=${tabs}></swaggerx-tabs>`);
+const el = await fixture<RunDocsTabs>(html`<rundocs-tabs .tabs=${tabs}></rundocs-tabs>`);
 const result = el.shadowRoot!.querySelector('.tab-btn');
 ```
 
@@ -463,23 +463,23 @@ npx pnpm run test:watch                      # Watch mode for development
 | Vite can't resolve express/fastify | Framework packages imported at top level | Middleware uses `require()` at runtime, not ES `import` |
 | "Lit is in dev mode" warning | Development build | Normal in dev; goes away in production build |
 | "The language 'bash' has no grammar" | Prism.js components need global `Prism`, Vite ESM can't provide it | Use `?raw` imports + `new Function('Prism', src)(Prism)` — see `prism-highlight.ts` |
-| Blank page when served via middleware behind proxy | Absolute asset paths lose proxy prefix | Middleware uses relative paths (`./swaggerx.css`) — already fixed |
-| CSS/JS 404 when accessing `/docs` (no trailing slash) | Browser resolves `./swaggerx.css` against wrong directory | Middleware redirects `/docs` → `/docs/` (301) — already fixed |
+| Blank page when served via middleware behind proxy | Absolute asset paths lose proxy prefix | Middleware uses relative paths (`./rundocs.css`) — already fixed |
+| CSS/JS 404 when accessing `/docs` (no trailing slash) | Browser resolves `./rundocs.css` against wrong directory | Middleware redirects `/docs` → `/docs/` (301) — already fixed |
 | "No API Specification" with inline spec | `spec` property set before custom element is defined | Middleware uses `customElements.whenDefined()` before setting `spec` — already fixed |
 | Code samples show URLs without server address | `baseUrl` is empty or relative | `code-gen.ts` falls back to `window.location.origin` — already fixed |
 | `specUrl` fails behind proxy | Browser fetches spec from wrong host | Use inline `spec` option instead of `specUrl` in middleware config |
 | Modal shows tooltip on hover | Using `title` property (native HTML tooltip) | Use `heading` property instead — already renamed |
 | API Key query param not sent | Comment said "handled in URL builder" but nobody did it | Fixed: `http-client.ts` appends query param to URL before fetch |
-| Auth fields not interpolated with env vars | `swaggerx-app.ts` passed `auth: state.auth` without interpolation | Fixed: all auth fields (token, username, password, apiKeyName, apiKeyValue) are now interpolated |
+| Auth fields not interpolated with env vars | `rundocs-app.ts` passed `auth: state.auth` without interpolation | Fixed: all auth fields (token, username, password, apiKeyName, apiKeyValue) are now interpolated |
 | History doesn't save/restore auth | Auth config was not included in history entries | Fixed: auth saved in history, restored on click, old entries reset to "No Auth" |
 | Code samples missing auth/headers/body | Code samples were static, generated only from spec | Fixed: `generateCodeSamples()` now accepts `CodeGenOptions { auth, headers, userBody }` — code samples dynamically reflect request builder state |
-| Code samples show `{id}` instead of actual value | Path params and env vars not resolved in code-gen | Fixed: `swaggerx-code-samples` resolves URL via `buildUrl()` + `interpolate()`, passes `resolvedUrl` to `generateCodeSamples()` |
+| Code samples show `{id}` instead of actual value | Path params and env vars not resolved in code-gen | Fixed: `rundocs-code-samples` resolves URL via `buildUrl()` + `interpolate()`, passes `resolvedUrl` to `generateCodeSamples()` |
 | History doesn't restore path/query params | `pathParams`/`queryParams` not saved in history entries | Fixed: `HistoryEntry.request` now includes `pathParams?` and `queryParams?`, restored in `_onHistorySelect()` |
-| API Key radio button (Header/Query) not updating | Switching between two API Key configs with different `apiKeyIn` keeps stale radio state | Fixed: changed `?checked=` (attribute binding) to `.checked=` (property binding) in `swaggerx-auth-editor.ts` |
+| API Key radio button (Header/Query) not updating | Switching between two API Key configs with different `apiKeyIn` keeps stale radio state | Fixed: changed `?checked=` (attribute binding) to `.checked=` (property binding) in `rundocs-auth-editor.ts` |
 | Code samples show spec example when body editor is empty | `code-gen.ts` fell back to `getExampleBody()` when `userBody` was empty | Fixed: POST/PUT/PATCH methods always use `userBody` (or empty string). No spec example fallback. Body editor pre-filled with `{}` for endpoints with `requestBody`. |
 | Code samples missing `-d` for POST without `requestBody` | Body logic checked `endpoint.requestBody` instead of HTTP method | Fixed: changed to check `['post', 'put', 'patch'].includes(endpoint.method)` — all POST methods get `-d` in curl |
-| No visual feedback on repeat Send click | Response area updated silently — user couldn't tell it changed | Fixed: loading overlay with spinner on response area while request is in flight (`swaggerx-response.ts`) |
-| No visual feedback when switching endpoints | Content changed instantly with no transition | Fixed: 200ms fade-in animation via Web Animations API in `swaggerx-endpoint.ts` `updated()` lifecycle |
+| No visual feedback on repeat Send click | Response area updated silently — user couldn't tell it changed | Fixed: loading overlay with spinner on response area while request is in flight (`rundocs-response.ts`) |
+| No visual feedback when switching endpoints | Content changed instantly with no transition | Fixed: 200ms fade-in animation via Web Animations API in `rundocs-endpoint.ts` `updated()` lifecycle |
 
 ## TypeScript Strictness
 

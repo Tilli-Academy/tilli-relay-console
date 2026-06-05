@@ -2,7 +2,7 @@
  * Type-safe localStorage helpers with JSON serialization and error handling.
  */
 
-const PREFIX = 'swaggerx:';
+const PREFIX = 'rundocs:';
 
 export function getItem<T>(key: string, fallback: T): T {
   try {

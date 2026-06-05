@@ -1,17 +1,17 @@
 {
-  "name": "swaggerx",
+  "name": "rundocs",
   "version": "0.1.0",
-  "description": "A Swagger UI clone with Postman-like UI/UX — installable as an npm plugin",
+  "description": "A Swagger UI alternative with Postman-like UI/UX — installable as an npm package",
   "type": "module",
-  "main": "./dist/swaggerx.js",
-  "module": "./dist/swaggerx.es.js",
-  "unpkg": "./dist/swaggerx.js",
+  "main": "./dist/rundocs.js",
+  "module": "./dist/rundocs.es.js",
+  "unpkg": "./dist/rundocs.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/swaggerx.es.js",
-      "require": "./dist/swaggerx.js"
+      "import": "./dist/rundocs.es.js",
+      "require": "./dist/rundocs.js"
     },
     "./express": {
       "types": "./dist/middleware/express.d.ts",
@@ -23,12 +23,12 @@
       "import": "./dist/middleware/fastify.js",
       "require": "./dist/middleware/fastify.cjs"
     },
-    "./style.css": "./dist/swaggerx.css"
+    "./style.css": "./dist/rundocs.css"
   },
   "sideEffects": [
     "**/*.css",
-    "./dist/swaggerx.es.js",
-    "./dist/swaggerx.js"
+    "./dist/rundocs.es.js",
+    "./dist/rundocs.js"
   ],
   "files": [
     "dist"

@@ -1,5 +1,5 @@
 import type {
-  SwaggerXSpec,
+  RunDocsSpec,
   ApiInfo,
   ServerInfo,
   TagGroup,
@@ -15,11 +15,11 @@ import type {
 const HTTP_METHODS: HttpMethod[] = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'];
 
 /**
- * Transforms a raw OpenAPI document into the SwaggerX internal model.
+ * Transforms a raw OpenAPI document into the RunDocs internal model.
  * Groups endpoints by tags, extracts server URLs, and builds the
  * data structure consumed by all UI components.
  */
-export function normalize(doc: Record<string, unknown>): SwaggerXSpec {
+export function normalize(doc: Record<string, unknown>): RunDocsSpec {
   const openapi3 = doc as Record<string, unknown>;
 
   const info = extractInfo(openapi3);

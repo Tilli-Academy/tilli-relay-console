@@ -1,4 +1,4 @@
-import type { SwaggerXSpec } from '../core/types.js';
+import type { RunDocsSpec } from '../core/types.js';
 import { parseSpec } from '../core/parser.js';
 import { normalize } from '../core/normalizer.js';
 
@@ -7,12 +7,12 @@ import { normalize } from '../core/normalizer.js';
  * Loads, parses, and normalizes the spec, then notifies listeners.
  */
 export class SpecStore {
-  private _spec: SwaggerXSpec | null = null;
+  private _spec: RunDocsSpec | null = null;
   private _loading = false;
   private _error: string | null = null;
   private _listeners = new Set<() => void>();
 
-  get spec(): SwaggerXSpec | null {
+  get spec(): RunDocsSpec | null {
     return this._spec;
   }
 

@@ -1,17 +1,17 @@
 import { createContext } from '@lit/context';
-import type { SwaggerXSpec, HistoryEntry, Environment, UIState } from '../core/types.js';
+import type { RunDocsSpec, HistoryEntry, Environment, UIState } from '../core/types.js';
 
 /** Parsed and normalized OpenAPI specification */
-export const specContext = createContext<SwaggerXSpec | null>(Symbol('swaggerx-spec'));
+export const specContext = createContext<RunDocsSpec | null>(Symbol('rundocs-spec'));
 
 /** Request history entries */
-export const historyContext = createContext<HistoryEntry[]>(Symbol('swaggerx-history'));
+export const historyContext = createContext<HistoryEntry[]>(Symbol('rundocs-history'));
 
 /** Environment variables configuration */
 export const envContext = createContext<{
   environments: Environment[];
   activeId: string | null;
-}>(Symbol('swaggerx-env'));
+}>(Symbol('rundocs-env'));
 
 /** Global UI state */
-export const uiContext = createContext<UIState>(Symbol('swaggerx-ui'));
+export const uiContext = createContext<UIState>(Symbol('rundocs-ui'));

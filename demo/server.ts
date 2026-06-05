@@ -1,5 +1,5 @@
 /**
- * SwaggerX Demo — Express Server
+ * RunDocs Demo — Express Server
  *
  * Run:
  *   npx tsx demo/server.ts
@@ -7,17 +7,17 @@
  * Then open http://localhost:3000/docs
  */
 import express from 'express';
-import { swaggerX } from '../src/middleware/express.js';
+import { runDocs } from '../src/middleware/express.js';
 
 const app = express();
 const PORT = 3000;
 
-// Serve SwaggerX UI at /docs
+// Serve RunDocs UI at /docs
 app.use(
   '/docs',
-  swaggerX({
+  runDocs({
     specUrl: 'https://petstore3.swagger.io/api/v3/openapi.json',
-    title: 'SwaggerX Demo',
+    title: 'RunDocs Demo',
   }),
 );
 
@@ -27,5 +27,5 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`SwaggerX demo running at http://localhost:${PORT}/docs`);
+  console.log(`RunDocs demo running at http://localhost:${PORT}/docs`);
 });

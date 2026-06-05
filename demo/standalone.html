@@ -3,31 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SwaggerX — Standalone Demo</title>
+  <title>RunDocs — Standalone Demo</title>
 
   <!--
     CDN Usage Example:
     Replace the src/href below with the actual CDN URLs after publishing.
     For local development, run `pnpm build` first and then serve this file.
   -->
-  <link rel="stylesheet" href="../dist/swaggerx.css" />
+  <link rel="stylesheet" href="../dist/rundocs.css" />
   <style>
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
     }
-    swaggerx-app {
+    rundocs-app {
       display: block;
       height: 100vh;
     }
   </style>
 </head>
 <body>
-  <swaggerx-app
+  <rundocs-app
     spec-url="https://petstore3.swagger.io/api/v3/openapi.json"
-  ></swaggerx-app>
+  ></rundocs-app>
 
-  <script type="module" src="../dist/swaggerx.es.js"></script>
+  <script type="module" src="../dist/rundocs.es.js"></script>
 </body>
 </html>

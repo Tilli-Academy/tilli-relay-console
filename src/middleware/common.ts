@@ -1,20 +1,20 @@
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-export interface SwaggerXOptions {
+export interface RunDocsOptions {
   /** URL or path to an OpenAPI JSON/YAML spec. */
   specUrl?: string;
   /** Inline OpenAPI spec object (JSON-serialisable). */
   spec?: Record<string, unknown>;
   /** Page title shown in the browser tab. */
   title?: string;
-  /** Base path where SwaggerX UI is served (used internally). */
+  /** Base path where RunDocs UI is served (used internally). */
   routePrefix?: string;
 }
 
 /**
  * Resolves the absolute path to the `dist` directory that contains the
- * built frontend assets (swaggerx.es.js, swaggerx.css).
+ * built frontend assets (rundocs.es.js, rundocs.css).
  */
 export function getDistDir(): string {
   // Works for both CJS (__dirname) and ESM (import.meta.url)
@@ -29,10 +29,10 @@ export function getDistDir(): string {
 }
 
 /**
- * Generates the full HTML page that bootstraps SwaggerX.
+ * Generates the full HTML page that bootstraps RunDocs.
  */
-export function renderHTML(opts: SwaggerXOptions = {}): string {
-  const title = opts.title ?? 'SwaggerX — API Documentation';
+export function renderHTML(opts: RunDocsOptions = {}): string {
+  const title = opts.title ?? 'RunDocs — API Documentation';
 
   let specAttr = '';
   if (opts.specUrl) {
@@ -43,10 +43,10 @@ export function renderHTML(opts: SwaggerXOptions = {}): string {
   if (opts.spec) {
     specScript = `
     <script>
-      window.__SWAGGERX_SPEC__ = ${JSON.stringify(opts.spec)};
-      customElements.whenDefined('swaggerx-app').then(() => {
-        const app = document.querySelector('swaggerx-app');
-        if (app) app.spec = window.__SWAGGERX_SPEC__;
+      window.__RUNDOCS_SPEC__ = ${JSON.stringify(opts.spec)};
+      customElements.whenDefined('rundocs-app').then(() => {
+        const app = document.querySelector('rundocs-app');
+        if (app) app.spec = window.__RUNDOCS_SPEC__;
       });
     </script>`;
   }
@@ -57,17 +57,17 @@ export function renderHTML(opts: SwaggerXOptions = {}): string {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${escapeHTML(title)}</title>
-  <link rel="stylesheet" href="./swaggerx.css" />
+  <link rel="stylesheet" href="./rundocs.css" />
   <style>
     html, body { margin: 0; padding: 0; height: 100%; }
-    swaggerx-app { display: block; height: 100vh; }
+    rundocs-app { display: block; height: 100vh; }
   </style>
 </head>
 <body>
-  <swaggerx-app${specAttr}></swaggerx-app>
+  <rundocs-app${specAttr}></rundocs-app>
   <script type="module">
-    import { defineSwaggerX } from './swaggerx.es.js';
-    defineSwaggerX();
+    import { defineRunDocs } from './rundocs.es.js';
+    defineRunDocs();
   </script>${specScript}
 </body>
 </html>`;

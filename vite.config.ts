@@ -13,11 +13,11 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: 'SwaggerX',
+      name: 'RunDocs',
       fileName: (format) => {
-        if (format === 'es') return 'swaggerx.es.js';
-        if (format === 'umd') return 'swaggerx.js';
-        return `swaggerx.${format}.js`;
+        if (format === 'es') return 'rundocs.es.js';
+        if (format === 'umd') return 'rundocs.js';
+        return `rundocs.${format}.js`;
       },
       formats: ['es', 'umd'],
     },

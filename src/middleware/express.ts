@@ -1,21 +1,21 @@
 import type { RequestHandler, Router } from 'express';
-import { getDistDir, renderHTML, type SwaggerXOptions } from './common.js';
+import { getDistDir, renderHTML, type RunDocsOptions } from './common.js';
 
-export type { SwaggerXOptions };
+export type { RunDocsOptions };
 
 /**
- * Express middleware that serves the SwaggerX UI.
+ * Express middleware that serves the RunDocs UI.
  *
  * @example
  * ```ts
  * import express from 'express';
- * import { swaggerX } from 'swaggerx/express';
+ * import { runDocs } from 'rundocs/express';
  *
  * const app = express();
- * app.use('/docs', swaggerX({ specUrl: '/openapi.json' }));
+ * app.use('/docs', runDocs({ specUrl: '/openapi.json' }));
  * ```
  */
-export function swaggerX(opts: SwaggerXOptions = {}): Router {
+export function runDocs(opts: RunDocsOptions = {}): Router {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const express = require('express') as typeof import('express');
 
@@ -44,4 +44,4 @@ export function swaggerX(opts: SwaggerXOptions = {}): Router {
   return router;
 }
 
-export default swaggerX;
+export default runDocs;

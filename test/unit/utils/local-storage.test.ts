@@ -28,9 +28,9 @@ describe('local-storage', () => {
       expect(getItem('missing', 'default')).toBe('default');
     });
 
-    it('prefixes keys with swaggerx:', () => {
+    it('prefixes keys with rundocs:', () => {
       setItem('mykey', 'val');
-      expect(localStorage.getItem('swaggerx:mykey')).toBe('"val"');
+      expect(localStorage.getItem('rundocs:mykey')).toBe('"val"');
     });
   });
 
@@ -45,7 +45,7 @@ describe('local-storage', () => {
 
   describe('error handling', () => {
     it('returns fallback if stored value is invalid JSON', () => {
-      localStorage.setItem('swaggerx:bad', 'not-json{');
+      localStorage.setItem('rundocs:bad', 'not-json{');
       expect(getItem('bad', 'fallback')).toBe('fallback');
     });
   });
