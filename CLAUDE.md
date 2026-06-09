@@ -480,6 +480,9 @@ npx pnpm run test:watch                      # Watch mode for development
 | Code samples missing `-d` for POST without `requestBody` | Body logic checked `endpoint.requestBody` instead of HTTP method | Fixed: changed to check `['post', 'put', 'patch'].includes(endpoint.method)` — all POST methods get `-d` in curl |
 | No visual feedback on repeat Send click | Response area updated silently — user couldn't tell it changed | Fixed: loading overlay with spinner on response area while request is in flight (`rundocs-response.ts`) |
 | No visual feedback when switching endpoints | Content changed instantly with no transition | Fixed: 200ms fade-in animation via Web Animations API in `rundocs-endpoint.ts` `updated()` lifecycle |
+| Blank page at `/docs` after rename to RunDocs | Hangman server served old `swaggerx.css`/`swaggerx.es.js` files | Fixed: updated hangman's `package.json` (`rundocs`) and `app.ts` (`runDocs`), rebuilt, restarted |
+| History/environments lost after rename | localStorage keys changed from `swaggerx:` to `rundocs:` prefix | Fixed: one-time migration in `local-storage.ts` copies old keys to new, deletes old |
+| 500 Internal Server Error on hangman `/api/v1/*` | `.env` file missing, `DATABASE_URL` empty, pg password undefined | Fixed: copy `.env.example` to `.env` to configure database credentials |
 
 ## TypeScript Strictness
 
