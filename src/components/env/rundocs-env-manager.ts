@@ -1,5 +1,6 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { keyed } from 'lit/directives/keyed.js';
 import { baseStyles } from '../../styles/theme.js';
 import '../shared/rundocs-icon.js';
 import '../shared/rundocs-modal.js';
@@ -150,6 +151,15 @@ export class RunDocsEnvManager extends LitElement {
         font-weight: 400;
         transition: opacity 0.3s ease;
       }
+
+      .vars-section {
+        animation: vars-fade-in 0.2s ease-out;
+      }
+
+      @keyframes vars-fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
     `,
   ];
 
@@ -297,16 +307,18 @@ export class RunDocsEnvManager extends LitElement {
         </div>
 
         ${this._selectedEnv
-          ? html`
-              <div class="divider"></div>
-              <h4 class="vars-title">${this._selectedEnv.name} — Variables</h4>
-              <rundocs-key-value-editor
-                .pairs=${this._getVarPairs(this._selectedEnv)}
-                key-placeholder="Variable name"
-                value-placeholder="Value"
-                @kv-change=${this._onVarsChange}
-              ></rundocs-key-value-editor>
-            `
+          ? keyed(this._selectedEnv.id, html`
+              <div class="vars-section">
+                <div class="divider"></div>
+                <h4 class="vars-title">${this._selectedEnv.name} — Variables</h4>
+                <rundocs-key-value-editor
+                  .pairs=${this._getVarPairs(this._selectedEnv)}
+                  key-placeholder="Variable name"
+                  value-placeholder="Value"
+                  @kv-change=${this._onVarsChange}
+                ></rundocs-key-value-editor>
+              </div>
+            `)
           : html`<div class="no-selection">Select an environment to edit its variables</div>`}
       </rundocs-modal>
     `;
