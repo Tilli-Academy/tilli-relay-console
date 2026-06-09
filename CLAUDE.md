@@ -483,6 +483,8 @@ npx pnpm run test:watch                      # Watch mode for development
 | Blank page at `/docs` after rename to RunDocs | Hangman server served old `swaggerx.css`/`swaggerx.es.js` files | Fixed: updated hangman's `package.json` (`rundocs`) and `app.ts` (`runDocs`), rebuilt, restarted |
 | History/environments lost after rename | localStorage keys changed from `swaggerx:` to `rundocs:` prefix | Fixed: one-time migration in `local-storage.ts` copies old keys to new, deletes old |
 | 500 Internal Server Error on hangman `/api/v1/*` | `.env` file missing, `DATABASE_URL` empty, pg password undefined | Fixed: copy `.env.example` to `.env` to configure database credentials |
+| Body editor visible on GET endpoint | Switching from POST (Body tab selected) to GET leaves body editor showing | Fixed: `rundocs-request-tabs.ts` `updated()` resets active tab to Params when `hasBody` becomes false |
+| Modal closes on backdrop click | Clicking dark area outside modal dismisses it (Swagger UI doesn't do this) | Fixed: removed backdrop click handler from `rundocs-modal.ts` — close only via X button or Escape |
 
 ## TypeScript Strictness
 
