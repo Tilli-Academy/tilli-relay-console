@@ -81,6 +81,13 @@ export class RunDocsRequestTabs extends LitElement {
     return tabs;
   }
 
+  override updated(changed: Map<string, unknown>) {
+    // Reset to first tab if current tab is no longer available (e.g. Body on GET)
+    if (changed.has('hasBody') && !this.hasBody && this._activeTab === 'body') {
+      this._activeTab = 'params';
+    }
+  }
+
   override render() {
     return html`
       <rundocs-tabs

@@ -106,12 +106,6 @@ export class RunDocsModal extends LitElement {
     );
   }
 
-  private _onBackdropClick(e: Event) {
-    if (e.target === e.currentTarget) {
-      this._close();
-    }
-  }
-
   private _onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape' && this.open) {
       this._close();
@@ -132,7 +126,7 @@ export class RunDocsModal extends LitElement {
     if (!this.open) return html``;
 
     return html`
-      <div class="backdrop" @click=${this._onBackdropClick}>
+      <div class="backdrop">
         <div class="modal" role="dialog" aria-modal="true" aria-label=${this.heading}>
           <div class="modal-header">
             <h2 class="modal-title">${this.heading}</h2>

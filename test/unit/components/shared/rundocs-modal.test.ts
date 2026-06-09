@@ -39,7 +39,7 @@ describe('rundocs-modal', () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
-  it('fires modal-close on backdrop click', async () => {
+  it('does not fire modal-close on backdrop click', async () => {
     const handler = vi.fn();
     const el = await fixture<RunDocsModal>(html`
       <rundocs-modal .open=${true} heading="Test" @modal-close=${handler}>Content</rundocs-modal>
@@ -47,7 +47,7 @@ describe('rundocs-modal', () => {
     const backdrop = el.shadowRoot!.querySelector('.backdrop') as HTMLElement;
     backdrop.click();
 
-    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).not.toHaveBeenCalled();
   });
 
   it('fires modal-close on Escape key', async () => {
