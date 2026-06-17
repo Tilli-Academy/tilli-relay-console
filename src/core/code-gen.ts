@@ -45,7 +45,9 @@ export function generateCodeSamples(
   // Body: for POST/PUT/PATCH methods, always include a body in code samples
   // (even if empty) so curl shows -d.  Matches Swagger UI behaviour.
   const methodsWithBody = ['post', 'put', 'patch'];
-  const body = methodsWithBody.includes(endpoint.method) ? (userBody ?? '') : null;
+  const body = methodsWithBody.includes(endpoint.method)
+    ? (userBody || getExampleBody(endpoint.requestBody) || '')
+    : null;
 
   // Build merged headers: auth headers first, then custom headers (can override)
   const mergedHeaders: Record<string, string> = {};
@@ -56,11 +58,13 @@ export function generateCodeSamples(
     Object.assign(mergedHeaders, customHeaders);
   }
 
+  const contentType = body !== null ? getContentType(endpoint.requestBody) : null;
+
   return {
-    curl: generateCurl(endpoint, fullUrl, body, mergedHeaders),
-    javascript: generateJavaScript(endpoint, fullUrl, body, mergedHeaders),
-    python: generatePython(endpoint, fullUrl, body, mergedHeaders),
-    nodejs: generateNodeJs(endpoint, fullUrl, body, mergedHeaders),
+    curl: generateCurl(endpoint, fullUrl, body, mergedHeaders, contentType),
+    javascript: generateJavaScript(endpoint, fullUrl, body, mergedHeaders, contentType),
+    python: generatePython(endpoint, fullUrl, body, mergedHeaders, contentType),
+    nodejs: generateNodeJs(endpoint, fullUrl, body, mergedHeaders, contentType),
   };
 }
 
@@ -110,46 +114,91 @@ function getExampleBody(requestBody: RequestBodyDef | undefined): string | null 
   return JSON.stringify(example, null, 2);
 }
 
-function generateCurl(endpoint: Endpoint, url: string, body: string | null, extraHeaders: Record<string, string>): string {
+/** Determines the primary content type from the endpoint's requestBody. */
+function getContentType(requestBody: RequestBodyDef | undefined): string {
+  if (!requestBody?.content) return 'application/json';
+  const types = Object.keys(requestBody.content);
+  if (types.includes('application/json')) return 'application/json';
+  if (types.includes('multipart/form-data')) return 'multipart/form-data';
+  if (types.includes('application/x-www-form-urlencoded')) return 'application/x-www-form-urlencoded';
+  return types[0] || 'application/json';
+}
+
+/** Escapes a string for embedding inside single-quoted shell arguments. */
+function escapeShellSingleQuote(str: string): string {
+  return str.replace(/'/g, "'\\''");
+}
+
+/** Escapes a string for embedding inside single-quoted JS/Python string literals. */
+function escapeJsString(str: string): string {
+  return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function generateCurl(endpoint: Endpoint, url: string, body: string | null, extraHeaders: Record<string, string>, contentType: string | null): string {
   const method = endpoint.method.toUpperCase();
-  const lines: string[] = [`curl -X ${method} '${url}'`];
+  const lines: string[] = [`curl -X ${method} '${escapeShellSingleQuote(url)}'`];
 
   const allHeaders: Record<string, string> = { ...extraHeaders };
-  if (body !== null && !allHeaders['Content-Type']) {
-    allHeaders['Content-Type'] = 'application/json';
+  if (body !== null && contentType && !allHeaders['Content-Type']) {
+    if (contentType !== 'multipart/form-data') {
+      allHeaders['Content-Type'] = contentType;
+    }
   }
   if (!allHeaders['Accept']) {
     allHeaders['Accept'] = 'application/json';
   }
 
   for (const [key, value] of Object.entries(allHeaders)) {
-    lines.push(`  -H '${key}: ${value}'`);
+    lines.push(`  -H '${escapeShellSingleQuote(key)}: ${escapeShellSingleQuote(value)}'`);
   }
 
   if (body !== null) {
-    lines.push(`  -d '${body}'`);
+    if (contentType === 'multipart/form-data') {
+      lines.push(`  -F 'file=@/path/to/file'`);
+    } else if (contentType === 'application/x-www-form-urlencoded') {
+      lines.push(`  --data-urlencode '${escapeShellSingleQuote(body)}'`);
+    } else {
+      lines.push(`  -d '${escapeShellSingleQuote(body)}'`);
+    }
   }
 
   return lines.join(' \\\n');
 }
 
-function generateJavaScript(endpoint: Endpoint, url: string, body: string | null, extraHeaders: Record<string, string>): string {
+function generateJavaScript(endpoint: Endpoint, url: string, body: string | null, extraHeaders: Record<string, string>, contentType: string | null): string {
   const method = endpoint.method.toUpperCase();
   const allHeaders: Record<string, string> = { ...extraHeaders };
   if (!allHeaders['Accept']) allHeaders['Accept'] = 'application/json';
-  if (body !== null && !allHeaders['Content-Type']) allHeaders['Content-Type'] = 'application/json';
+  if (body !== null && contentType && !allHeaders['Content-Type']) {
+    if (contentType !== 'multipart/form-data') {
+      allHeaders['Content-Type'] = contentType;
+    }
+  }
 
   const lines: string[] = [];
-  lines.push(`const response = await fetch('${url}', {`);
+
+  if (contentType === 'multipart/form-data' && body !== null) {
+    lines.push(`const formData = new FormData();`);
+    lines.push(`formData.append('file', fileInput.files[0]);`);
+    lines.push(``);
+  }
+
+  lines.push(`const response = await fetch('${escapeJsString(url)}', {`);
   lines.push(`  method: '${method}',`);
   lines.push(`  headers: {`);
   for (const [key, value] of Object.entries(allHeaders)) {
-    lines.push(`    '${key}': '${value}',`);
+    lines.push(`    '${escapeJsString(key)}': '${escapeJsString(value)}',`);
   }
   lines.push(`  },`);
 
   if (body !== null) {
-    lines.push(`  body: JSON.stringify(${body}),`);
+    if (contentType === 'multipart/form-data') {
+      lines.push(`  body: formData,`);
+    } else if (contentType === 'application/x-www-form-urlencoded') {
+      lines.push(`  body: new URLSearchParams(${body}),`);
+    } else {
+      lines.push(`  body: JSON.stringify(${body}),`);
+    }
   }
 
   lines.push(`});`);
@@ -160,13 +209,13 @@ function generateJavaScript(endpoint: Endpoint, url: string, body: string | null
   return lines.join('\n');
 }
 
-function generatePython(endpoint: Endpoint, url: string, body: string | null, extraHeaders: Record<string, string>): string {
+function generatePython(endpoint: Endpoint, url: string, body: string | null, extraHeaders: Record<string, string>, contentType: string | null): string {
   const method = endpoint.method.toLowerCase();
   const allHeaders: Record<string, string> = { ...extraHeaders };
   if (!allHeaders['Accept']) allHeaders['Accept'] = 'application/json';
 
   const headerEntries = Object.entries(allHeaders)
-    .map(([k, v]) => `'${k}': '${v}'`)
+    .map(([k, v]) => `'${escapeJsString(k)}': '${escapeJsString(v)}'`)
     .join(', ');
 
   const lines: string[] = [];
@@ -174,16 +223,34 @@ function generatePython(endpoint: Endpoint, url: string, body: string | null, ex
   lines.push(``);
 
   if (body !== null) {
-    lines.push(`payload = ${body}`);
-    lines.push(``);
-    lines.push(`response = requests.${method}(`);
-    lines.push(`    '${url}',`);
-    lines.push(`    json=payload,`);
-    lines.push(`    headers={${headerEntries}}`);
-    lines.push(`)`);
+    if (contentType === 'multipart/form-data') {
+      lines.push(`files = {'file': open('/path/to/file', 'rb')}`);
+      lines.push(``);
+      lines.push(`response = requests.${method}(`);
+      lines.push(`    '${escapeJsString(url)}',`);
+      lines.push(`    files=files,`);
+      lines.push(`    headers={${headerEntries}}`);
+      lines.push(`)`);
+    } else if (contentType === 'application/x-www-form-urlencoded') {
+      lines.push(`payload = ${body}`);
+      lines.push(``);
+      lines.push(`response = requests.${method}(`);
+      lines.push(`    '${escapeJsString(url)}',`);
+      lines.push(`    data=payload,`);
+      lines.push(`    headers={${headerEntries}}`);
+      lines.push(`)`);
+    } else {
+      lines.push(`payload = ${body}`);
+      lines.push(``);
+      lines.push(`response = requests.${method}(`);
+      lines.push(`    '${escapeJsString(url)}',`);
+      lines.push(`    json=payload,`);
+      lines.push(`    headers={${headerEntries}}`);
+      lines.push(`)`);
+    }
   } else {
     lines.push(`response = requests.${method}(`);
-    lines.push(`    '${url}',`);
+    lines.push(`    '${escapeJsString(url)}',`);
     lines.push(`    headers={${headerEntries}}`);
     lines.push(`)`);
   }
@@ -194,26 +261,52 @@ function generatePython(endpoint: Endpoint, url: string, body: string | null, ex
   return lines.join('\n');
 }
 
-function generateNodeJs(endpoint: Endpoint, url: string, body: string | null, extraHeaders: Record<string, string>): string {
+function generateNodeJs(endpoint: Endpoint, url: string, body: string | null, extraHeaders: Record<string, string>, contentType: string | null): string {
   const method = endpoint.method.toUpperCase();
   const allHeaders: Record<string, string> = { ...extraHeaders };
   if (!allHeaders['Accept']) allHeaders['Accept'] = 'application/json';
-  if (body !== null && !allHeaders['Content-Type']) allHeaders['Content-Type'] = 'application/json';
+  if (body !== null && contentType && !allHeaders['Content-Type']) {
+    if (contentType !== 'multipart/form-data') {
+      allHeaders['Content-Type'] = contentType;
+    }
+  }
 
   const lines: string[] = [];
-  lines.push(`const axios = require('axios');`);
-  lines.push(``);
-  lines.push(`const { data } = await axios({`);
-  lines.push(`  method: '${method}',`);
-  lines.push(`  url: '${url}',`);
-  lines.push(`  headers: {`);
-  for (const [key, value] of Object.entries(allHeaders)) {
-    lines.push(`    '${key}': '${value}',`);
+
+  if (contentType === 'multipart/form-data' && body !== null) {
+    lines.push(`const axios = require('axios');`);
+    lines.push(`const FormData = require('form-data');`);
+    lines.push(`const fs = require('fs');`);
+    lines.push(``);
+    lines.push(`const form = new FormData();`);
+    lines.push(`form.append('file', fs.createReadStream('/path/to/file'));`);
+    lines.push(``);
+    lines.push(`const { data } = await axios({`);
+    lines.push(`  method: '${method}',`);
+    lines.push(`  url: '${escapeJsString(url)}',`);
+    lines.push(`  headers: {`);
+    for (const [key, value] of Object.entries(allHeaders)) {
+      lines.push(`    '${escapeJsString(key)}': '${escapeJsString(value)}',`);
+    }
+    lines.push(`    ...form.getHeaders(),`);
+    lines.push(`  },`);
+    lines.push(`  data: form,`);
+  } else {
+    lines.push(`const axios = require('axios');`);
+    lines.push(``);
+    lines.push(`const { data } = await axios({`);
+    lines.push(`  method: '${method}',`);
+    lines.push(`  url: '${escapeJsString(url)}',`);
+    lines.push(`  headers: {`);
+    for (const [key, value] of Object.entries(allHeaders)) {
+      lines.push(`    '${escapeJsString(key)}': '${escapeJsString(value)}',`);
+    }
+    lines.push(`  },`);
+    if (body !== null) {
+      lines.push(`  data: ${body},`);
+    }
   }
-  lines.push(`  },`);
-  if (body !== null) {
-    lines.push(`  data: ${body},`);
-  }
+
   lines.push(`});`);
   lines.push(``);
   lines.push(`console.log(data);`);

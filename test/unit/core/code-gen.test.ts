@@ -228,7 +228,7 @@ describe('code-gen', () => {
       expect(samples.curl).not.toContain('Buddy');
     });
 
-    it('includes empty -d when userBody is empty but endpoint has requestBody', () => {
+    it('falls back to spec example when userBody is empty and endpoint has requestBody schema', () => {
       const endpoint = makeEndpoint({
         method: 'post',
         path: '/pets',
@@ -248,9 +248,42 @@ describe('code-gen', () => {
         userBody: '',
       });
 
-      expect(samples.curl).not.toContain('Rex');
+      expect(samples.curl).toContain('Rex');
+      expect(samples.curl).toContain('Content-Type: application/json');
+    });
+
+    it('includes empty -d when userBody is empty and endpoint has no requestBody schema', () => {
+      const endpoint = makeEndpoint({
+        method: 'post',
+        path: '/pets',
+      });
+      const samples = generateCodeSamples(endpoint, baseUrl, {
+        userBody: '',
+      });
+
       expect(samples.curl).toContain("-d ''");
       expect(samples.curl).toContain('Content-Type: application/json');
+    });
+
+    it('falls back to spec example when userBody is not provided', () => {
+      const endpoint = makeEndpoint({
+        method: 'post',
+        path: '/pets',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: { name: { type: 'string', example: 'Rex' } },
+              },
+            },
+          },
+        },
+      });
+      const samples = generateCodeSamples(endpoint, baseUrl);
+
+      expect(samples.curl).toContain('Rex');
     });
 
     it('auth type none adds no auth header', () => {
@@ -315,6 +348,155 @@ describe('code-gen', () => {
       expect(samples.javascript).toContain('https://api.example.com/pets/42');
       expect(samples.python).toContain('https://api.example.com/pets/42');
       expect(samples.nodejs).toContain('https://api.example.com/pets/42');
+    });
+  });
+
+  describe('escaping user input', () => {
+    it('escapes single quotes in curl body', () => {
+      const endpoint = makeEndpoint({ method: 'post', path: '/pets' });
+      const samples = generateCodeSamples(endpoint, baseUrl, {
+        userBody: '{"name": "O\'Brien"}',
+      });
+
+      expect(samples.curl).toContain("O'\\''Brien");
+    });
+
+    it('escapes single quotes in curl header values', () => {
+      const endpoint = makeEndpoint();
+      const samples = generateCodeSamples(endpoint, baseUrl, {
+        headers: { 'X-Custom': "it's a test" },
+      });
+
+      expect(samples.curl).toContain("it'\\''s a test");
+    });
+
+    it('escapes single quotes in JavaScript header values', () => {
+      const endpoint = makeEndpoint();
+      const samples = generateCodeSamples(endpoint, baseUrl, {
+        headers: { 'X-Custom': "it's a test" },
+      });
+
+      expect(samples.javascript).toContain("it\\'s a test");
+    });
+
+    it('escapes single quotes in Python header values', () => {
+      const endpoint = makeEndpoint();
+      const samples = generateCodeSamples(endpoint, baseUrl, {
+        headers: { 'X-Custom': "it's a test" },
+      });
+
+      expect(samples.python).toContain("it\\'s a test");
+    });
+
+    it('escapes single quotes in Node.js header values', () => {
+      const endpoint = makeEndpoint();
+      const samples = generateCodeSamples(endpoint, baseUrl, {
+        headers: { 'X-Custom': "it's a test" },
+      });
+
+      expect(samples.nodejs).toContain("it\\'s a test");
+    });
+  });
+
+  describe('content type detection', () => {
+    it('uses application/json for JSON request body', () => {
+      const endpoint = makeEndpoint({
+        method: 'post',
+        path: '/pets',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { type: 'object', properties: { name: { type: 'string' } } },
+            },
+          },
+        },
+      });
+      const samples = generateCodeSamples(endpoint, baseUrl, {
+        userBody: '{"name": "Buddy"}',
+      });
+
+      expect(samples.curl).toContain('Content-Type: application/json');
+      expect(samples.curl).toContain("-d ");
+    });
+
+    it('uses multipart/form-data when spec declares it', () => {
+      const endpoint = makeEndpoint({
+        method: 'post',
+        path: '/upload',
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: {
+                type: 'object',
+                properties: { file: { type: 'string', format: 'binary' } },
+              },
+            },
+          },
+        },
+      });
+      const samples = generateCodeSamples(endpoint, baseUrl, {
+        userBody: '{}',
+      });
+
+      expect(samples.curl).toContain('-F ');
+      expect(samples.curl).not.toContain('Content-Type: multipart/form-data');
+      expect(samples.javascript).toContain('FormData');
+      expect(samples.python).toContain('files=');
+    });
+
+    it('uses application/x-www-form-urlencoded when spec declares it', () => {
+      const endpoint = makeEndpoint({
+        method: 'post',
+        path: '/login',
+        requestBody: {
+          required: true,
+          content: {
+            'application/x-www-form-urlencoded': {
+              schema: {
+                type: 'object',
+                properties: {
+                  username: { type: 'string' },
+                  password: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      });
+      const samples = generateCodeSamples(endpoint, baseUrl, {
+        userBody: '{"username": "admin", "password": "pass"}',
+      });
+
+      expect(samples.curl).toContain('Content-Type: application/x-www-form-urlencoded');
+      expect(samples.curl).toContain('--data-urlencode');
+      expect(samples.javascript).toContain('URLSearchParams');
+      expect(samples.python).toContain('data=payload');
+    });
+
+    it('prefers application/json when multiple content types available', () => {
+      const endpoint = makeEndpoint({
+        method: 'post',
+        path: '/pets',
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: { type: 'object' },
+            },
+            'application/json': {
+              schema: { type: 'object', properties: { name: { type: 'string' } } },
+            },
+          },
+        },
+      });
+      const samples = generateCodeSamples(endpoint, baseUrl, {
+        userBody: '{"name": "Buddy"}',
+      });
+
+      expect(samples.curl).toContain('Content-Type: application/json');
+      expect(samples.curl).toContain("-d ");
     });
   });
 });

@@ -1,9 +1,25 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getItem, setItem, removeItem } from '../../../src/utils/local-storage.js';
+
+function createMockStorage(): Storage {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => { store[key] = String(value); },
+    removeItem: (key: string) => { delete store[key]; },
+    clear: () => { store = {}; },
+    get length() { return Object.keys(store).length; },
+    key: (index: number) => Object.keys(store)[index] ?? null,
+  };
+}
 
 describe('local-storage', () => {
   beforeEach(() => {
-    localStorage.clear();
+    vi.stubGlobal('localStorage', createMockStorage());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   describe('setItem / getItem', () => {
