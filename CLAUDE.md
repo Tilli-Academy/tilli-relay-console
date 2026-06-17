@@ -13,7 +13,7 @@ RunDocs is a Swagger UI alternative with Postman-like UI/UX, built as an install
 - **Authentication Support** — Bearer token, Basic auth, API Key (header or query)
 - **Response Viewer** — Color-coded status badges, response time/size, formatted JSON body, response headers table. Loading overlay with spinner on the response area while a repeat request is in flight, providing visible feedback that the response is being refreshed.
 - **Schema Documentation** — Expandable property tree with types, constraints, descriptions; generated JSON examples
-- **Code Samples** — Dynamic snippets in cURL, JavaScript, Python, Node.js that reflect the user's auth config, custom headers, request body, resolved path/query params, and interpolated environment variables from the request builder. Copy-paste-ready: `{id}` becomes the actual UUID, `{{auth_token}}` becomes the real token. POST/PUT/PATCH methods always include `-d` in curl (matching Swagger UI): body editor content → `-d '...'`, empty body → `-d ''`. Endpoints with `requestBody` in spec get body editor pre-filled with `{}`. Supports Bearer, Basic, API Key (header/query), and OAuth2 auth. Header merge order: auth headers → custom headers → Content-Type/Accept defaults.
+- **Code Samples** — Dynamic snippets in cURL, JavaScript, Python, Node.js that reflect the user's auth config, custom headers, request body, resolved path/query params, and interpolated environment variables from the request builder. Copy-paste-ready: `{id}` becomes the actual UUID, `{{auth_token}}` becomes the real token. POST/PUT/PATCH methods always include `-d` in curl (matching Swagger UI): body editor content → `-d '...'`, empty body falls back to spec example from `getExampleBody()` → `-d '{"name":"example",...}'`, no spec example → `-d ''`. Endpoints with `requestBody` in spec get body editor pre-filled with `{}`. Supports Bearer, Basic, API Key (header/query), and OAuth2 auth. Header merge order: auth headers → custom headers → Content-Type/Accept defaults. User input (URLs, headers, body) is escaped per language: shell single-quote escaping (`'\''`) for cURL, backslash escaping for JS/Node strings. Content-Type is detected from spec's `requestBody.content` keys (supports `application/json`, `multipart/form-data`, `application/x-www-form-urlencoded`) instead of hardcoded.
 - **Request History** — Stores up to 100 requests in localStorage with full response data including auth config, path params, and query params. Click to restore saved request/response/auth/params, selected item highlighting, delete individual or clear all. Old entries without auth reset to "No Auth" on restore.
 - **Environment Variables** — Multiple environments (Dev, Staging, Prod), `{{variable}}` interpolation in URLs, headers, body, and auth fields (token, username, password, API key name/value). Auto-save indicator in env manager modal header (debounced 500ms). 200ms fade-in transition on the variables section when switching between environments in the manager modal.
 - **Dark Mode** — Light/dark theme toggle, persisted to localStorage
@@ -80,7 +80,7 @@ RunDocs is a Swagger UI alternative with Postman-like UI/UX, built as an install
 |---|---|
 | Source code (42 components) | Done |
 | Dual build system (Vite + tsup) | Done |
-| Unit tests (450 tests, 59 files) | Done |
+| Unit tests (461 tests, 59 files) | Done |
 | Accessibility audit + fixes | Done |
 | TypeScript strict mode | Done |
 | Dev server (Vite) | Done |
@@ -269,7 +269,7 @@ rundocs/
 │   │   ├── parser.ts                         # OpenAPI spec fetching and parsing
 │   │   ├── normalizer.ts                     # Raw spec → RunDocsSpec transformation
 │   │   ├── schema-resolver.ts                # $ref dereferencing + example generation
-│   │   └── code-gen.ts                       # Dynamic code sample generation (4 languages, auth/headers/body from request builder, POST/PUT/PATCH always include -d, window.location.origin fallback)
+│   │   └── code-gen.ts                       # Dynamic code sample generation (4 languages, auth/headers/body from request builder, POST/PUT/PATCH always include -d, window.location.origin fallback, spec example fallback via getExampleBody, per-language escaping, content-type detection from spec)
 │   ├── middleware/
 │   │   ├── express.ts                        # Express router middleware (trailing slash redirect)
 │   │   ├── fastify.ts                        # Fastify plugin (trailing slash redirect)
@@ -381,7 +381,7 @@ npx pnpm dev                    # Start Vite dev server (loads Petstore spec)
 npx pnpm run typecheck          # TypeScript type checking (strict, noUnusedLocals/Params)
 
 # Testing
-npx pnpm test                   # Run all 450 tests once
+npx pnpm test                   # Run all 461 tests once
 npx pnpm run test:watch         # Run tests in watch mode
 npx vitest run test/unit/core/  # Run tests in a specific directory
 npx vitest run -t "parseSpec"   # Run tests matching a name pattern
@@ -407,7 +407,7 @@ npx pnpm run clean              # Delete dist/ folder
 
 ### Overview
 
-- **450 tests** across **59 test files**
+- **461 tests** across **59 test files**
 - **Test runner**: Vitest with happy-dom environment
 - **Component testing**: @open-wc/testing for Lit component fixtures
 - **All tests pass** with TypeScript compiling cleanly
@@ -476,7 +476,7 @@ npx pnpm run test:watch                      # Watch mode for development
 | Code samples show `{id}` instead of actual value | Path params and env vars not resolved in code-gen | Fixed: `rundocs-code-samples` resolves URL via `buildUrl()` + `interpolate()`, passes `resolvedUrl` to `generateCodeSamples()` |
 | History doesn't restore path/query params | `pathParams`/`queryParams` not saved in history entries | Fixed: `HistoryEntry.request` now includes `pathParams?` and `queryParams?`, restored in `_onHistorySelect()` |
 | API Key radio button (Header/Query) not updating | Switching between two API Key configs with different `apiKeyIn` keeps stale radio state | Fixed: changed `?checked=` (attribute binding) to `.checked=` (property binding) in `rundocs-auth-editor.ts` |
-| Code samples show spec example when body editor is empty | `code-gen.ts` fell back to `getExampleBody()` when `userBody` was empty | Fixed: POST/PUT/PATCH methods always use `userBody` (or empty string). No spec example fallback. Body editor pre-filled with `{}` for endpoints with `requestBody`. |
+| Code samples show spec example when body editor is empty | `code-gen.ts` fell back to `getExampleBody()` when `userBody` was empty | Fixed: POST/PUT/PATCH methods use `userBody` when non-empty, fall back to `getExampleBody()` for spec example, then empty string. Body editor pre-filled with `{}` for endpoints with `requestBody`. User input escaped per language; content-type detected from spec. |
 | Code samples missing `-d` for POST without `requestBody` | Body logic checked `endpoint.requestBody` instead of HTTP method | Fixed: changed to check `['post', 'put', 'patch'].includes(endpoint.method)` — all POST methods get `-d` in curl |
 | No visual feedback on repeat Send click | Response area updated silently — user couldn't tell it changed | Fixed: loading overlay with spinner on response area while request is in flight (`rundocs-response.ts`) |
 | No visual feedback when switching endpoints | Content changed instantly with no transition | Fixed: 200ms fade-in animation via Web Animations API in `rundocs-endpoint.ts` `updated()` lifecycle |
