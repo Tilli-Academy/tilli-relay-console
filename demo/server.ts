@@ -2,6 +2,7 @@
  * RunDocs Demo — Express Server
  *
  * Run:
+ *   npx pnpm run build          # must build first so dist/ assets exist
  *   npx tsx demo/server.ts
  *
  * Then open http://localhost:3000/docs
