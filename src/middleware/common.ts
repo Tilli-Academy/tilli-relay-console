@@ -25,6 +25,10 @@ export function getDistDir(): string {
 
   // When built with tsup the middleware lives at dist/middleware/
   // so the frontend assets are one level up in dist/
+  // When running from source (src/middleware/) go up to project root then into dist/
+  if (dir.replace(/\\/g, '/').endsWith('src/middleware')) {
+    return resolve(dir, '..', '..', 'dist');
+  }
   return resolve(dir, '..');
 }
 
