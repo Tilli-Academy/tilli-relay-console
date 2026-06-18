@@ -165,6 +165,45 @@ describe('EnvStore', () => {
     expect(persisted[0].name).toBe('Production');
   });
 
+  describe('env variable redaction in localStorage', () => {
+    it('redacts all variable values from persisted environments', () => {
+      const store = new EnvStore();
+      store.addEnvironment('Dev', {
+        auth_token: 'secret-123',
+        api_key: 'key-456',
+        base_url: '/api/v1',
+      });
+
+      // In-memory values are intact
+      expect(store.environments[0].variables.auth_token).toBe('secret-123');
+      expect(store.environments[0].variables.api_key).toBe('key-456');
+      expect(store.environments[0].variables.base_url).toBe('/api/v1');
+
+      // Persisted values are all empty
+      const persisted = JSON.parse(storage['rundocs:environments']);
+      expect(persisted[0].variables.auth_token).toBe('');
+      expect(persisted[0].variables.api_key).toBe('');
+      expect(persisted[0].variables.base_url).toBe('');
+    });
+
+    it('preserves variable names in persisted environments', () => {
+      const store = new EnvStore();
+      store.addEnvironment('Dev', { token: 'secret', url: 'https://api.com' });
+
+      const persisted = JSON.parse(storage['rundocs:environments']);
+      expect(Object.keys(persisted[0].variables)).toEqual(['token', 'url']);
+    });
+
+    it('preserves environment name and id in persisted data', () => {
+      const store = new EnvStore();
+      const env = store.addEnvironment('Production', { key: 'value' });
+
+      const persisted = JSON.parse(storage['rundocs:environments']);
+      expect(persisted[0].name).toBe('Production');
+      expect(persisted[0].id).toBe(env.id);
+    });
+  });
+
   it('persists active id to localStorage', () => {
     const store = new EnvStore();
     const env = store.addEnvironment('Production');

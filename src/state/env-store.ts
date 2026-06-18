@@ -50,7 +50,7 @@ export class EnvStore {
   }
 
   private _persist(): void {
-    setItem(ENVS_KEY, this._environments);
+    setItem(ENVS_KEY, this._environments.map(redactEnvValues));
     setItem(ACTIVE_KEY, this._activeId);
   }
 
@@ -116,4 +116,13 @@ export class EnvStore {
     this._persist();
     this._notify();
   }
+}
+
+/** Strip all variable values before writing to localStorage. Names are kept, values set to empty. */
+function redactEnvValues(env: Environment): Environment {
+  const redactedVars: Record<string, string> = {};
+  for (const key of Object.keys(env.variables)) {
+    redactedVars[key] = '';
+  }
+  return { ...env, variables: redactedVars };
 }
