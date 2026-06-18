@@ -2,7 +2,7 @@ import SwaggerParser from '@apidevtools/swagger-parser';
 
 /**
  * Parses and validates an OpenAPI spec from a URL or inline content.
- * Supports OpenAPI 2.0 (Swagger), 3.0, and 3.1.
+ * Supports OpenAPI 3.0 and 3.1.
  * Dereferences all $ref pointers so the returned doc is fully resolved.
  *
  * @param specUrlOrContent - URL to a JSON/YAML spec, or inline JSON string
@@ -31,7 +31,18 @@ export async function parseSpec(specUrlOrContent: string): Promise<Record<string
 
     // Validate and dereference the spec
     const api = await SwaggerParser.validate(input as string);
-    return api as unknown as Record<string, unknown>;
+    const doc = api as unknown as Record<string, unknown>;
+
+    // Reject Swagger 2.0 specs — parameter types and request bodies
+    // are structured differently and not supported by the normalizer.
+    if (doc.swagger && !doc.openapi) {
+      throw new Error(
+        'This spec uses Swagger 2.0 format. RunDocs currently supports OpenAPI 3.0 and 3.1 only. ' +
+          'Convert your spec to OpenAPI 3.x using https://converter.swagger.io',
+      );
+    }
+
+    return doc;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     throw new Error(`Failed to parse OpenAPI spec: ${message}`);

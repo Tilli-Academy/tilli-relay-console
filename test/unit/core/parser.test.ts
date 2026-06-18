@@ -49,4 +49,24 @@ describe('parseSpec', () => {
   it('throws on empty string', async () => {
     await expect(parseSpec('')).rejects.toThrow('Failed to parse OpenAPI spec');
   });
+
+  it('rejects Swagger 2.0 specs with a clear error', async () => {
+    const swagger2 = JSON.stringify({
+      swagger: '2.0',
+      info: { title: 'Test', version: '1.0' },
+      host: 'api.example.com',
+      basePath: '/v1',
+      paths: {
+        '/pets': {
+          get: {
+            summary: 'List pets',
+            responses: { '200': { description: 'OK' } },
+          },
+        },
+      },
+    });
+
+    await expect(parseSpec(swagger2)).rejects.toThrow('Swagger 2.0');
+    await expect(parseSpec(swagger2)).rejects.toThrow('OpenAPI 3.0 and 3.1 only');
+  });
 });

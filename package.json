@@ -1,7 +1,7 @@
 {
   "name": "rundocs",
   "version": "0.1.0",
-  "description": "A Swagger UI alternative with Postman-like UI/UX — installable as an npm package",
+  "description": "An OpenAPI 3.x documentation UI with Postman-like UX — installable as an npm package",
   "type": "module",
   "main": "./dist/rundocs.js",
   "module": "./dist/rundocs.es.js",
@@ -48,14 +48,12 @@
     "prepublishOnly": "pnpm build"
   },
   "keywords": [
-    "swagger",
     "openapi",
     "api-documentation",
     "postman",
     "rest-api",
     "web-components",
     "lit",
-    "swagger-ui",
     "api-explorer"
   ],
   "author": "",
