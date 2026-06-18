@@ -7,16 +7,26 @@
  * Then open http://localhost:3000/docs
  */
 import express from 'express';
+import { readFileSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { runDocs } from '../src/middleware/express.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const PORT = 3000;
+
+// Load the bundled spec (same-origin, no CORS issues)
+const spec = JSON.parse(
+  readFileSync(resolve(__dirname, '../public/fakerest-spec.json'), 'utf-8'),
+);
 
 // Serve RunDocs UI at /docs
 app.use(
   '/docs',
   runDocs({
-    specUrl: 'https://petstore3.swagger.io/api/v3/openapi.json',
+    spec,
     title: 'RunDocs Demo',
   }),
 );

@@ -25,9 +25,12 @@
 </head>
 <body>
   <rundocs-app
-    spec-url="https://petstore3.swagger.io/api/v3/openapi.json"
+    spec-url="../dist/fakerest-spec.json"
   ></rundocs-app>
 
-  <script type="module" src="../dist/rundocs.es.js"></script>
+  <script type="module">
+    import { defineRunDocs } from '../dist/rundocs.es.js';
+    defineRunDocs();
+  </script>
 </body>
 </html>

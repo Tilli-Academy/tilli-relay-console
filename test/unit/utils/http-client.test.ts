@@ -167,7 +167,7 @@ describe('sendRequest', () => {
     expect(init.headers['X-API-Key']).toBe('secret123');
   });
 
-  it('does not apply API Key in query (handled by url-builder)', async () => {
+  it('does not apply API Key query param as a header', async () => {
     mockFetch.mockResolvedValue(mockResponse(''));
     await sendRequest(
       defaultOptions({
@@ -182,6 +182,58 @@ describe('sendRequest', () => {
 
     const [, init] = mockFetch.mock.calls[0];
     expect(init.headers['api_key']).toBeUndefined();
+  });
+
+  it('appends API Key to URL as query param when apiKeyIn is query', async () => {
+    mockFetch.mockResolvedValue(mockResponse(''));
+    await sendRequest(
+      defaultOptions({
+        auth: {
+          type: 'apiKey',
+          apiKeyName: 'api_key',
+          apiKeyValue: 'secret123',
+          apiKeyIn: 'query',
+        } as AuthConfig,
+      }),
+    );
+
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.example.com/pets?api_key=secret123');
+  });
+
+  it('uses & separator when URL already has query params', async () => {
+    mockFetch.mockResolvedValue(mockResponse(''));
+    await sendRequest(
+      defaultOptions({
+        url: 'https://api.example.com/pets?limit=10',
+        auth: {
+          type: 'apiKey',
+          apiKeyName: 'api_key',
+          apiKeyValue: 'secret123',
+          apiKeyIn: 'query',
+        } as AuthConfig,
+      }),
+    );
+
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.example.com/pets?limit=10&api_key=secret123');
+  });
+
+  it('encodes special characters in API Key name and value', async () => {
+    mockFetch.mockResolvedValue(mockResponse(''));
+    await sendRequest(
+      defaultOptions({
+        auth: {
+          type: 'apiKey',
+          apiKeyName: 'my key',
+          apiKeyValue: 'abc&123',
+          apiKeyIn: 'query',
+        } as AuthConfig,
+      }),
+    );
+
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://api.example.com/pets?my%20key=abc%26123');
   });
 
   it('handles fetch TypeError (network/CORS error)', async () => {
