@@ -321,7 +321,7 @@ rundocs/
 │       └── minimal-spec.json                 # Minimal valid OpenAPI spec for unit tests
 │
 ├── demo/
-│   ├── server.ts                             # Express demo server (mount at /docs, inline fakerest spec)
+│   ├── server.ts                             # Express demo server (mount at /docs, inline fakerest spec, requires `pnpm build` first)
 │   └── standalone.html                       # CDN/standalone HTML demo page (uses local fakerest spec)
 │
 ├── dist/                                     # Build output (generated)
