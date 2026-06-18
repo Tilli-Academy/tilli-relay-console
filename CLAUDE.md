@@ -80,7 +80,7 @@ RunDocs is a Swagger UI alternative with Postman-like UI/UX, built as an install
 |---|---|
 | Source code (42 components) | Done |
 | Dual build system (Vite + tsup) | Done |
-| Unit tests (481 tests, 59 files) | Done |
+| Unit tests (487 tests, 59 files) | Done |
 | Accessibility audit + fixes | Done |
 | TypeScript strict mode | Done |
 | Dev server (Vite) | Done |
@@ -321,8 +321,8 @@ rundocs/
 │       └── minimal-spec.json                 # Minimal valid OpenAPI spec for unit tests
 │
 ├── demo/
-│   ├── server.ts                             # Express demo server (mount at /docs)
-│   └── standalone.html                       # CDN/standalone HTML demo page
+│   ├── server.ts                             # Express demo server (mount at /docs, inline fakerest spec)
+│   └── standalone.html                       # CDN/standalone HTML demo page (uses local fakerest spec)
 │
 ├── dist/                                     # Build output (generated)
 │
@@ -381,7 +381,7 @@ npx pnpm dev                    # Start Vite dev server (loads Petstore spec)
 npx pnpm run typecheck          # TypeScript type checking (strict, noUnusedLocals/Params)
 
 # Testing
-npx pnpm test                   # Run all 481 tests once
+npx pnpm test                   # Run all 487 tests once
 npx pnpm run test:watch         # Run tests in watch mode
 npx vitest run test/unit/core/  # Run tests in a specific directory
 npx vitest run -t "parseSpec"   # Run tests matching a name pattern
@@ -397,7 +397,6 @@ npx pnpm run format             # Prettier auto-format src/
 npx pnpm run format:check       # Check formatting without fixing
 
 # E2E Testing
-npx pnpm run test:e2e           # Run Playwright end-to-end tests
 
 # Utility
 npx pnpm run clean              # Delete dist/ folder
@@ -407,7 +406,7 @@ npx pnpm run clean              # Delete dist/ folder
 
 ### Overview
 
-- **481 tests** across **59 test files**
+- **487 tests** across **59 test files**
 - **Test runner**: Vitest with happy-dom environment
 - **Component testing**: @open-wc/testing for Lit component fixtures
 - **All tests pass** with TypeScript compiling cleanly
@@ -488,6 +487,10 @@ npx pnpm run test:watch                      # Watch mode for development
 | 500 Internal Server Error on hangman `/api/v1/*` | `.env` file missing, `DATABASE_URL` empty, pg password undefined | Fixed: copy `.env.example` to `.env` to configure database credentials |
 | Body editor visible on GET endpoint | Switching from POST (Body tab selected) to GET leaves body editor showing | Fixed: `rundocs-request-tabs.ts` `updated()` resets active tab to Params when `hasBody` becomes false |
 | Modal closes on backdrop click | Clicking dark area outside modal dismisses it (Swagger UI doesn't do this) | Fixed: removed backdrop click handler from `rundocs-modal.ts` — close only via X button or Escape |
+| Demo standalone.html blank page | Missing `defineRunDocs()` call and Petstore CORS errors | Fixed: added `defineRunDocs()` import/call, switched to local `fakerest-spec.json` |
+| Demo server.ts CORS errors | Used `specUrl` pointing to Petstore (cross-origin fetch blocked) | Fixed: switched to inline `spec` loaded from `public/fakerest-spec.json` |
+| Fastify tests vacuous | Tests only checked `typeof runDocs === 'function'`, not actual route behavior | Fixed: rewrote with `Fastify.inject()` to verify HTML rendering, specUrl, inline spec, custom title |
+| `test:e2e` script broken | Referenced `playwright test` but Playwright was never installed | Fixed: removed dead script from `package.json` |
 
 ## TypeScript Strictness
 
