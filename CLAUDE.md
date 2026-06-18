@@ -15,7 +15,7 @@ RunDocs is a Swagger UI alternative with Postman-like UI/UX, built as an install
 - **Schema Documentation** — Expandable property tree with types, constraints, descriptions; generated JSON examples
 - **Code Samples** — Dynamic snippets in cURL, JavaScript, Python, Node.js that reflect the user's auth config, custom headers, request body, resolved path/query params, and interpolated environment variables from the request builder. Copy-paste-ready: `{id}` becomes the actual UUID, `{{auth_token}}` becomes the real token. POST/PUT/PATCH methods always include `-d` in curl (matching Swagger UI): body editor content → `-d '...'`, empty body falls back to spec example from `getExampleBody()` → `-d '{"name":"example",...}'`, no spec example → `-d ''`. Endpoints with `requestBody` in spec get body editor pre-filled with `{}`. Supports Bearer, Basic, API Key (header/query), and OAuth2 auth. Header merge order: auth headers → custom headers → Content-Type/Accept defaults. User input (URLs, headers, body) is escaped per language: shell single-quote escaping (`'\''`) for cURL, backslash escaping for JS/Node strings. Content-Type is detected from spec's `requestBody.content` keys (supports `application/json`, `multipart/form-data`, `application/x-www-form-urlencoded`) instead of hardcoded.
 - **Request History** — Stores up to 100 requests in localStorage with full response data, path params, and query params. Auth secrets (tokens, passwords, API key values) and sensitive headers (Authorization, Cookie) are redacted before persisting — only auth type and non-sensitive metadata are saved to disk. Click to restore saved request/response/params, selected item highlighting, delete individual or clear all. Old entries without auth reset to "No Auth" on restore.
-- **Environment Variables** — Multiple environments (Dev, Staging, Prod), `{{variable}}` interpolation in URLs, headers, body, and auth fields (token, username, password, API key name/value). Auto-save indicator in env manager modal header (debounced 500ms). 200ms fade-in transition on the variables section when switching between environments in the manager modal.
+- **Environment Variables** — Multiple environments (Dev, Staging, Prod), `{{variable}}` interpolation in URLs, headers, body, and auth fields (token, username, password, API key name/value). Auto-save indicator in env manager modal header (debounced 500ms). 200ms fade-in transition on the variables section when switching between environments in the manager modal. Variable values are kept in memory only — not persisted to localStorage (variable names and environment names are saved).
 - **Dark Mode** — Light/dark theme toggle, persisted to localStorage
 - **Fuzzy Search** — Filter endpoints instantly via fuse.js
 - **Resizable Split Pane** — Draggable sidebar/main divider, ratio persisted
@@ -80,7 +80,7 @@ RunDocs is a Swagger UI alternative with Postman-like UI/UX, built as an install
 |---|---|
 | Source code (42 components) | Done |
 | Dual build system (Vite + tsup) | Done |
-| Unit tests (478 tests, 59 files) | Done |
+| Unit tests (481 tests, 59 files) | Done |
 | Accessibility audit + fixes | Done |
 | TypeScript strict mode | Done |
 | Dev server (Vite) | Done |
@@ -279,7 +279,7 @@ rundocs/
 │   │   ├── spec-store.ts                     # Parsed spec state
 │   │   ├── request-store.ts                  # Per-endpoint request state
 │   │   ├── history-store.ts                  # Request history (localStorage, max 100, auth secrets redacted before persisting)
-│   │   ├── env-store.ts                      # Environments + variables (localStorage)
+│   │   ├── env-store.ts                      # Environments + variables (localStorage, all variable values redacted before persisting — memory only)
 │   │   └── ui-store.ts                       # Theme, sidebar, layout state, history selection
 │   ├── styles/
 │   │   ├── theme.ts                          # Light/dark theme CSS variables
@@ -381,7 +381,7 @@ npx pnpm dev                    # Start Vite dev server (loads Petstore spec)
 npx pnpm run typecheck          # TypeScript type checking (strict, noUnusedLocals/Params)
 
 # Testing
-npx pnpm test                   # Run all 478 tests once
+npx pnpm test                   # Run all 481 tests once
 npx pnpm run test:watch         # Run tests in watch mode
 npx vitest run test/unit/core/  # Run tests in a specific directory
 npx vitest run -t "parseSpec"   # Run tests matching a name pattern
@@ -407,7 +407,7 @@ npx pnpm run clean              # Delete dist/ folder
 
 ### Overview
 
-- **478 tests** across **59 test files**
+- **481 tests** across **59 test files**
 - **Test runner**: Vitest with happy-dom environment
 - **Component testing**: @open-wc/testing for Lit component fixtures
 - **All tests pass** with TypeScript compiling cleanly
