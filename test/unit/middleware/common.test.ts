@@ -60,6 +60,22 @@ describe('middleware/common', () => {
       expect(html).toContain('<rundocs-app');
       expect(html).toContain('</rundocs-app>');
     });
+
+    it('escapes </script> in inline spec to prevent script injection', () => {
+      const spec = { info: { description: '</script><script>alert("xss")</script>' } };
+      const html = renderHTML({ spec });
+      // Must not contain a literal </script> inside the JSON — browser would close the tag early
+      expect(html).not.toContain('</script><script>alert');
+      // The < should be escaped as \u003c
+      expect(html).toContain('\\u003c/script>');
+    });
+
+    it('preserves spec data after escaping < in JSON', () => {
+      const spec = { info: { description: 'a < b and c > d' } };
+      const html = renderHTML({ spec });
+      expect(html).toContain('\\u003c');
+      expect(html).toContain('window.__RUNDOCS_SPEC__');
+    });
   });
 
   describe('getDistDir', () => {

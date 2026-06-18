@@ -32,7 +32,7 @@ export class HistoryStore {
   }
 
   private _persist(): void {
-    setItem(STORAGE_KEY, this._entries);
+    setItem(STORAGE_KEY, this._entries.map(redactEntry));
   }
 
   add(entry: {
@@ -82,4 +82,39 @@ export class HistoryStore {
   getByEndpoint(endpointId: string): HistoryEntry[] {
     return this._entries.filter((e) => e.endpointId === endpointId);
   }
+}
+
+/** Sensitive header names that should not be persisted to localStorage. */
+const SENSITIVE_HEADERS = ['authorization', 'proxy-authorization', 'cookie', 'set-cookie'];
+
+/** Strip auth secrets and sensitive headers before writing to localStorage. */
+function redactEntry(entry: HistoryEntry): HistoryEntry {
+  // Redact auth — keep the type so history shows what kind of auth was used
+  let redactedAuth: AuthConfig | undefined;
+  if (entry.request.auth) {
+    redactedAuth = { type: entry.request.auth.type };
+    if (entry.request.auth.apiKeyName) {
+      redactedAuth.apiKeyName = entry.request.auth.apiKeyName;
+    }
+    if (entry.request.auth.apiKeyIn) {
+      redactedAuth.apiKeyIn = entry.request.auth.apiKeyIn;
+    }
+  }
+
+  // Strip sensitive headers (Authorization, Cookie, etc.)
+  const redactedHeaders: Record<string, string> = {};
+  for (const [key, value] of Object.entries(entry.request.headers)) {
+    if (!SENSITIVE_HEADERS.includes(key.toLowerCase())) {
+      redactedHeaders[key] = value;
+    }
+  }
+
+  return {
+    ...entry,
+    request: {
+      ...entry.request,
+      headers: redactedHeaders,
+      auth: redactedAuth,
+    },
+  };
 }

@@ -27,11 +27,11 @@ export function markdownToHtml(md: string): string {
   // Italic
   result = result.replace(/\*(.+?)\*/g, '<em>$1</em>');
 
-  // Links [text](url)
-  result = result.replace(
-    /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener">$1</a>',
-  );
+  // Links [text](url) — sanitize href to prevent XSS
+  result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, text, url) => {
+    const href = sanitizeUrl(url);
+    return `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
+  });
 
   // Unordered lists
   result = result.replace(/^[*-] (.+)$/gm, '<li>$1</li>');
@@ -63,4 +63,28 @@ function escapeHtml(str: string): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+/** Allowlist safe URL schemes and escape quotes to prevent XSS via href injection. */
+function sanitizeUrl(url: string): string {
+  // Decode HTML entities so we can inspect the real URL
+  const decoded = url
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+
+  const trimmed = decoded.trim().toLowerCase();
+
+  // Allow only safe schemes + relative/anchor URLs
+  const isSafe =
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('mailto:') ||
+    trimmed.startsWith('#') ||
+    trimmed.startsWith('/');
+
+  if (!isSafe) return '#';
+
+  // Escape double quotes to prevent attribute breakout
+  return url.replace(/"/g, '&quot;');
 }

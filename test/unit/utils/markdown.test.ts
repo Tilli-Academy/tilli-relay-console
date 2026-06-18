@@ -63,4 +63,65 @@ describe('markdownToHtml', () => {
     expect(result).toContain('<p>First paragraph</p>');
     expect(result).toContain('<p>Second paragraph</p>');
   });
+
+  describe('link XSS prevention', () => {
+    it('blocks javascript: protocol in links', () => {
+      const result = markdownToHtml('[click](javascript:alert(1))');
+      expect(result).not.toContain('href="javascript:');
+      expect(result).toContain('href="#"');
+    });
+
+    it('blocks javascript: with mixed case', () => {
+      const result = markdownToHtml('[click](JavaScript:alert(1))');
+      expect(result).not.toContain('javascript:');
+      expect(result).toContain('href="#"');
+    });
+
+    it('blocks data: protocol in links', () => {
+      const result = markdownToHtml('[click](data:text/html,<script>alert(1)</script>)');
+      expect(result).toContain('href="#"');
+    });
+
+    it('blocks vbscript: protocol in links', () => {
+      const result = markdownToHtml('[click](vbscript:MsgBox("xss"))');
+      expect(result).toContain('href="#"');
+    });
+
+    it('blocks attribute breakout via double quotes', () => {
+      const result = markdownToHtml('[hover](" onmouseover="alert(1))');
+      expect(result).not.toContain('onmouseover');
+      expect(result).toContain('href="#"');
+    });
+
+    it('escapes double quotes in otherwise safe URLs', () => {
+      const result = markdownToHtml('[click](https://example.com/"test)');
+      expect(result).not.toContain('href="https://example.com/"test"');
+      expect(result).toContain('&quot;');
+    });
+
+    it('allows http:// links', () => {
+      const result = markdownToHtml('[docs](http://example.com)');
+      expect(result).toContain('href="http://example.com"');
+    });
+
+    it('allows https:// links', () => {
+      const result = markdownToHtml('[docs](https://example.com)');
+      expect(result).toContain('href="https://example.com"');
+    });
+
+    it('allows mailto: links', () => {
+      const result = markdownToHtml('[email](mailto:user@example.com)');
+      expect(result).toContain('href="mailto:user@example.com"');
+    });
+
+    it('allows anchor (#) links', () => {
+      const result = markdownToHtml('[section](#overview)');
+      expect(result).toContain('href="#overview"');
+    });
+
+    it('allows relative path links', () => {
+      const result = markdownToHtml('[page](/docs/guide)');
+      expect(result).toContain('href="/docs/guide"');
+    });
+  });
 });

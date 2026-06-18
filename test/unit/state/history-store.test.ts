@@ -204,4 +204,82 @@ describe('HistoryStore', () => {
     expect(entry.response.time).toBe(100);
     expect(entry.response.size).toBe(2);
   });
+
+  describe('secret redaction in localStorage', () => {
+    it('redacts bearer token from persisted history', () => {
+      const store = new HistoryStore();
+      store.add({
+        ...makeEntry(),
+        auth: { type: 'bearer', token: 'secret-jwt-token-123' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer secret-jwt-token-123',
+        },
+      });
+
+      // In-memory entry keeps the token
+      expect(store.entries[0].request.auth?.token).toBe('secret-jwt-token-123');
+
+      // Persisted entry should have token redacted
+      const persisted = JSON.parse(storage['rundocs:history']);
+      expect(persisted[0].request.auth.type).toBe('bearer');
+      expect(persisted[0].request.auth.token).toBeUndefined();
+      expect(persisted[0].request.headers.Authorization).toBeUndefined();
+      // Non-sensitive headers are still there
+      expect(persisted[0].request.headers['Content-Type']).toBe('application/json');
+    });
+
+    it('redacts basic auth password from persisted history', () => {
+      const store = new HistoryStore();
+      store.add({
+        ...makeEntry(),
+        auth: { type: 'basic', username: 'admin', password: 'secret-pass' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Basic YWRtaW46c2VjcmV0LXBhc3M=',
+        },
+      });
+
+      const persisted = JSON.parse(storage['rundocs:history']);
+      expect(persisted[0].request.auth.type).toBe('basic');
+      expect(persisted[0].request.auth.username).toBeUndefined();
+      expect(persisted[0].request.auth.password).toBeUndefined();
+      expect(persisted[0].request.headers.Authorization).toBeUndefined();
+    });
+
+    it('redacts API key value but keeps name and location', () => {
+      const store = new HistoryStore();
+      store.add({
+        ...makeEntry(),
+        auth: { type: 'apiKey', apiKeyName: 'X-API-Key', apiKeyValue: 'secret-key-456', apiKeyIn: 'header' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': 'secret-key-456',
+        },
+      });
+
+      const persisted = JSON.parse(storage['rundocs:history']);
+      expect(persisted[0].request.auth.type).toBe('apiKey');
+      expect(persisted[0].request.auth.apiKeyName).toBe('X-API-Key');
+      expect(persisted[0].request.auth.apiKeyIn).toBe('header');
+      expect(persisted[0].request.auth.apiKeyValue).toBeUndefined();
+    });
+
+    it('keeps non-sensitive headers in persisted history', () => {
+      const store = new HistoryStore();
+      store.add({
+        ...makeEntry(),
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: 'Bearer secret',
+        },
+      });
+
+      const persisted = JSON.parse(storage['rundocs:history']);
+      expect(persisted[0].request.headers['Content-Type']).toBe('application/json');
+      expect(persisted[0].request.headers.Accept).toBe('application/json');
+      expect(persisted[0].request.headers.Authorization).toBeUndefined();
+    });
+  });
 });

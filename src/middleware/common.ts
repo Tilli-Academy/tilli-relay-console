@@ -43,7 +43,7 @@ export function renderHTML(opts: RunDocsOptions = {}): string {
   if (opts.spec) {
     specScript = `
     <script>
-      window.__RUNDOCS_SPEC__ = ${JSON.stringify(opts.spec)};
+      window.__RUNDOCS_SPEC__ = ${JSON.stringify(opts.spec).replace(/</g, '\\u003c')};
       customElements.whenDefined('rundocs-app').then(() => {
         const app = document.querySelector('rundocs-app');
         if (app) app.spec = window.__RUNDOCS_SPEC__;
