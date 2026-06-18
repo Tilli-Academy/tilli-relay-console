@@ -273,7 +273,7 @@ rundocs/
 │   ├── middleware/
 │   │   ├── express.ts                        # Express router middleware (trailing slash redirect)
 │   │   ├── fastify.ts                        # Fastify plugin (trailing slash redirect)
-│   │   └── common.ts                         # Shared HTML renderer (relative paths, defineRunDocs, inline spec, < escaped as \u003c in JSON to prevent script injection)
+│   │   └── common.ts                         # Shared HTML renderer (relative paths, defineRunDocs, inline spec, < escaped as \u003c in JSON to prevent script injection, getDistDir detects src/ vs dist/ for correct asset path)
 │   ├── state/
 │   │   ├── contexts.ts                       # Lit context definitions
 │   │   ├── spec-store.ts                     # Parsed spec state
@@ -491,6 +491,7 @@ npx pnpm run test:watch                      # Watch mode for development
 | Demo server.ts CORS errors | Used `specUrl` pointing to Petstore (cross-origin fetch blocked) | Fixed: switched to inline `spec` loaded from `public/fakerest-spec.json` |
 | Fastify tests vacuous | Tests only checked `typeof runDocs === 'function'`, not actual route behavior | Fixed: rewrote with `Fastify.inject()` to verify HTML rendering, specUrl, inline spec, custom title |
 | `test:e2e` script broken | Referenced `playwright test` but Playwright was never installed | Fixed: removed dead script from `package.json` |
+| Demo server 404 on CSS/JS files | `getDistDir()` resolved to `src/` when running from source instead of `dist/` | Fixed: detect `src/middleware` path and resolve to `../../dist` instead of `..` |
 
 ## TypeScript Strictness
 
