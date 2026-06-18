@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-RunDocs is a Swagger UI alternative with Postman-like UI/UX, built as an installable npm package using Lit web components. Developers point it at an OpenAPI spec (2.0/3.0/3.1) and get interactive API documentation with a built-in request builder, history, and environment variables.
+RunDocs is an OpenAPI 3.x documentation UI with Postman-like UX, built as an installable npm package using Lit web components. Developers point it at an OpenAPI 3.0 or 3.1 spec and get interactive API documentation with a built-in request builder, history, and environment variables. Swagger 2.0 specs are rejected with a clear error message directing users to convert via https://converter.swagger.io.
 
 ## Key Features
 
-- **API Documentation Viewer** — Loads OpenAPI 2.0/3.0/3.1 specs from URL or inline JSON/YAML, displays endpoints grouped by tags. 200ms fade-in transition when switching between endpoints for visual feedback.
+- **API Documentation Viewer** — Loads OpenAPI 3.0/3.1 specs from URL or inline JSON/YAML, displays endpoints grouped by tags. Swagger 2.0 specs are rejected with a conversion link. 200ms fade-in transition when switching between endpoints for visual feedback.
 - **Interactive Request Builder** — Method selector, URL input, path/query parameter editors, headers editor, request body editor (JSON/XML/plaintext)
 - **Authentication Support** — Bearer token, Basic auth, API Key (header or query)
 - **Response Viewer** — Color-coded status badges, response time/size, formatted JSON body, response headers table. Loading overlay with spinner on the response area while a repeat request is in flight, providing visible feedback that the response is being refreshed.
@@ -80,7 +80,7 @@ RunDocs is a Swagger UI alternative with Postman-like UI/UX, built as an install
 |---|---|
 | Source code (42 components) | Done |
 | Dual build system (Vite + tsup) | Done |
-| Unit tests (487 tests, 59 files) | Done |
+| Unit tests (488 tests, 59 files) | Done |
 | Accessibility audit + fixes | Done |
 | TypeScript strict mode | Done |
 | Dev server (Vite) | Done |
@@ -266,7 +266,7 @@ rundocs/
 │   │       └── rundocs-key-value-editor.ts  # Reusable key-value pair editor
 │   ├── core/
 │   │   ├── types.ts                          # TypeScript interfaces
-│   │   ├── parser.ts                         # OpenAPI spec fetching and parsing
+│   │   ├── parser.ts                         # OpenAPI spec fetching and parsing (rejects Swagger 2.0 with conversion link)
 │   │   ├── normalizer.ts                     # Raw spec → RunDocsSpec transformation
 │   │   ├── schema-resolver.ts                # $ref dereferencing + example generation
 │   │   └── code-gen.ts                       # Dynamic code sample generation (4 languages, auth/headers/body from request builder, POST/PUT/PATCH always include -d, window.location.origin fallback, spec example fallback via getExampleBody, per-language escaping, content-type detection from spec)
@@ -381,7 +381,7 @@ npx pnpm dev                    # Start Vite dev server (loads Petstore spec)
 npx pnpm run typecheck          # TypeScript type checking (strict, noUnusedLocals/Params)
 
 # Testing
-npx pnpm test                   # Run all 487 tests once
+npx pnpm test                   # Run all 488 tests once
 npx pnpm run test:watch         # Run tests in watch mode
 npx vitest run test/unit/core/  # Run tests in a specific directory
 npx vitest run -t "parseSpec"   # Run tests matching a name pattern
@@ -406,7 +406,7 @@ npx pnpm run clean              # Delete dist/ folder
 
 ### Overview
 
-- **487 tests** across **59 test files**
+- **488 tests** across **59 test files**
 - **Test runner**: Vitest with happy-dom environment
 - **Component testing**: @open-wc/testing for Lit component fixtures
 - **All tests pass** with TypeScript compiling cleanly
@@ -491,6 +491,7 @@ npx pnpm run test:watch                      # Watch mode for development
 | Demo server.ts CORS errors | Used `specUrl` pointing to Petstore (cross-origin fetch blocked) | Fixed: switched to inline `spec` loaded from `public/fakerest-spec.json` |
 | Fastify tests vacuous | Tests only checked `typeof runDocs === 'function'`, not actual route behavior | Fixed: rewrote with `Fastify.inject()` to verify HTML rendering, specUrl, inline spec, custom title |
 | `test:e2e` script broken | Referenced `playwright test` but Playwright was never installed | Fixed: removed dead script from `package.json` |
+| Swagger 2.0 spec shows wrong types | Normalizer assumes OAS3 `param.schema` — 2.0 puts type directly on param, so everything falls back to `string` | Fixed: `parser.ts` now rejects 2.0 specs with a clear error and conversion link. Scoped to OpenAPI 3.x only. |
 | Demo server 404 on CSS/JS files | `getDistDir()` resolved to `src/` when running from source instead of `dist/` | Fixed: detect `src/middleware` path and resolve to `../../dist` instead of `..` |
 
 ## TypeScript Strictness
