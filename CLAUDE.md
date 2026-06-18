@@ -14,7 +14,7 @@ RunDocs is a Swagger UI alternative with Postman-like UI/UX, built as an install
 - **Response Viewer** — Color-coded status badges, response time/size, formatted JSON body, response headers table. Loading overlay with spinner on the response area while a repeat request is in flight, providing visible feedback that the response is being refreshed.
 - **Schema Documentation** — Expandable property tree with types, constraints, descriptions; generated JSON examples
 - **Code Samples** — Dynamic snippets in cURL, JavaScript, Python, Node.js that reflect the user's auth config, custom headers, request body, resolved path/query params, and interpolated environment variables from the request builder. Copy-paste-ready: `{id}` becomes the actual UUID, `{{auth_token}}` becomes the real token. POST/PUT/PATCH methods always include `-d` in curl (matching Swagger UI): body editor content → `-d '...'`, empty body falls back to spec example from `getExampleBody()` → `-d '{"name":"example",...}'`, no spec example → `-d ''`. Endpoints with `requestBody` in spec get body editor pre-filled with `{}`. Supports Bearer, Basic, API Key (header/query), and OAuth2 auth. Header merge order: auth headers → custom headers → Content-Type/Accept defaults. User input (URLs, headers, body) is escaped per language: shell single-quote escaping (`'\''`) for cURL, backslash escaping for JS/Node strings. Content-Type is detected from spec's `requestBody.content` keys (supports `application/json`, `multipart/form-data`, `application/x-www-form-urlencoded`) instead of hardcoded.
-- **Request History** — Stores up to 100 requests in localStorage with full response data including auth config, path params, and query params. Click to restore saved request/response/auth/params, selected item highlighting, delete individual or clear all. Old entries without auth reset to "No Auth" on restore.
+- **Request History** — Stores up to 100 requests in localStorage with full response data, path params, and query params. Auth secrets (tokens, passwords, API key values) and sensitive headers (Authorization, Cookie) are redacted before persisting — only auth type and non-sensitive metadata are saved to disk. Click to restore saved request/response/params, selected item highlighting, delete individual or clear all. Old entries without auth reset to "No Auth" on restore.
 - **Environment Variables** — Multiple environments (Dev, Staging, Prod), `{{variable}}` interpolation in URLs, headers, body, and auth fields (token, username, password, API key name/value). Auto-save indicator in env manager modal header (debounced 500ms). 200ms fade-in transition on the variables section when switching between environments in the manager modal.
 - **Dark Mode** — Light/dark theme toggle, persisted to localStorage
 - **Fuzzy Search** — Filter endpoints instantly via fuse.js
@@ -80,7 +80,7 @@ RunDocs is a Swagger UI alternative with Postman-like UI/UX, built as an install
 |---|---|
 | Source code (42 components) | Done |
 | Dual build system (Vite + tsup) | Done |
-| Unit tests (461 tests, 59 files) | Done |
+| Unit tests (478 tests, 59 files) | Done |
 | Accessibility audit + fixes | Done |
 | TypeScript strict mode | Done |
 | Dev server (Vite) | Done |
@@ -273,12 +273,12 @@ rundocs/
 │   ├── middleware/
 │   │   ├── express.ts                        # Express router middleware (trailing slash redirect)
 │   │   ├── fastify.ts                        # Fastify plugin (trailing slash redirect)
-│   │   └── common.ts                         # Shared HTML renderer (relative paths, defineRunDocs, inline spec)
+│   │   └── common.ts                         # Shared HTML renderer (relative paths, defineRunDocs, inline spec, < escaped as \u003c in JSON to prevent script injection)
 │   ├── state/
 │   │   ├── contexts.ts                       # Lit context definitions
 │   │   ├── spec-store.ts                     # Parsed spec state
 │   │   ├── request-store.ts                  # Per-endpoint request state
-│   │   ├── history-store.ts                  # Request history (localStorage, max 100)
+│   │   ├── history-store.ts                  # Request history (localStorage, max 100, auth secrets redacted before persisting)
 │   │   ├── env-store.ts                      # Environments + variables (localStorage)
 │   │   └── ui-store.ts                       # Theme, sidebar, layout state, history selection
 │   ├── styles/
@@ -294,7 +294,7 @@ rundocs/
 │   │   ├── prism-highlight.ts                # Prism.js syntax highlighting (code samples + schema)
 │   │   ├── codemirror-theme.ts               # CodeMirror editor theme (maps --sx-syntax-* vars)
 │   │   ├── local-storage.ts                  # JSON get/set/remove helpers
-│   │   └── markdown.ts                       # Markdown → HTML conversion
+│   │   └── markdown.ts                       # Markdown → HTML conversion (link URLs sanitized: scheme allowlist + quote escaping)
 │   ├── index.ts                              # Package entry point + CSS import
 │   ├── define.ts                             # Component auto-registration
 │   └── vite-env.d.ts                         # Vite environment type declarations
@@ -381,7 +381,7 @@ npx pnpm dev                    # Start Vite dev server (loads Petstore spec)
 npx pnpm run typecheck          # TypeScript type checking (strict, noUnusedLocals/Params)
 
 # Testing
-npx pnpm test                   # Run all 461 tests once
+npx pnpm test                   # Run all 478 tests once
 npx pnpm run test:watch         # Run tests in watch mode
 npx vitest run test/unit/core/  # Run tests in a specific directory
 npx vitest run -t "parseSpec"   # Run tests matching a name pattern
@@ -407,7 +407,7 @@ npx pnpm run clean              # Delete dist/ folder
 
 ### Overview
 
-- **461 tests** across **59 test files**
+- **478 tests** across **59 test files**
 - **Test runner**: Vitest with happy-dom environment
 - **Component testing**: @open-wc/testing for Lit component fixtures
 - **All tests pass** with TypeScript compiling cleanly
@@ -478,6 +478,9 @@ npx pnpm run test:watch                      # Watch mode for development
 | API Key radio button (Header/Query) not updating | Switching between two API Key configs with different `apiKeyIn` keeps stale radio state | Fixed: changed `?checked=` (attribute binding) to `.checked=` (property binding) in `rundocs-auth-editor.ts` |
 | Code samples show spec example when body editor is empty | `code-gen.ts` fell back to `getExampleBody()` when `userBody` was empty | Fixed: POST/PUT/PATCH methods use `userBody` when non-empty, fall back to `getExampleBody()` for spec example, then empty string. Body editor pre-filled with `{}` for endpoints with `requestBody`. User input escaped per language; content-type detected from spec. |
 | Code samples missing `-d` for POST without `requestBody` | Body logic checked `endpoint.requestBody` instead of HTTP method | Fixed: changed to check `['post', 'put', 'patch'].includes(endpoint.method)` — all POST methods get `-d` in curl |
+| Stored XSS via markdown link URLs | `markdown.ts` link regex dropped URLs into `href` with no scheme check or quote escaping — `javascript:` and `"` attribute breakout worked | Fixed: `sanitizeUrl()` allowlists `http/https/mailto/#/` schemes, escapes `"` as `&quot;` in href values |
+| `</script>` injection in middleware HTML | `JSON.stringify(opts.spec)` didn't escape `</script>` sequences in inline spec | Fixed: escape `<` as `\u003c` after JSON.stringify — browser can't see premature `</script>`, JS still decodes correctly |
+| Auth secrets persisted in plaintext localStorage | `history-store.ts` saved full `AuthConfig` (tokens, passwords, API keys) and `Authorization` header in history entries | Fixed: `redactEntry()` strips `token`, `password`, `apiKeyValue`, `username` from auth and removes `Authorization`/`Cookie` headers before persisting. In-memory entries keep full data for current session. |
 | No visual feedback on repeat Send click | Response area updated silently — user couldn't tell it changed | Fixed: loading overlay with spinner on response area while request is in flight (`rundocs-response.ts`) |
 | No visual feedback when switching endpoints | Content changed instantly with no transition | Fixed: 200ms fade-in animation via Web Animations API in `rundocs-endpoint.ts` `updated()` lifecycle |
 | Blank page at `/docs` after rename to RunDocs | Hangman server served old `swaggerx.css`/`swaggerx.es.js` files | Fixed: updated hangman's `package.json` (`rundocs`) and `app.ts` (`runDocs`), rebuilt, restarted |
