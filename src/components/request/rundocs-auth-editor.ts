@@ -126,7 +126,8 @@ export class RunDocsAuthEditor extends LitElement {
 
   override render() {
     return html`
-      <select class="auth-type-select" .value=${this.auth.type} @change=${this._onTypeChange}>
+      <label for="auth-type-select" class="sr-only">Authentication type</label>
+      <select id="auth-type-select" class="auth-type-select" .value=${this.auth.type} @change=${this._onTypeChange}>
         <option value="none">No Auth</option>
         <option value="bearer">Bearer Token</option>
         <option value="basic">Basic Auth</option>
@@ -138,8 +139,9 @@ export class RunDocsAuthEditor extends LitElement {
       ${this.auth.type === 'bearer'
         ? html`
             <div class="field">
-              <label class="field-label">Token</label>
+              <label class="field-label" for="auth-bearer-token">Token</label>
               <input
+                id="auth-bearer-token"
                 class="field-input"
                 type="text"
                 .value=${this.auth.token ?? ''}
@@ -154,8 +156,9 @@ export class RunDocsAuthEditor extends LitElement {
         ? html`
             <div class="field-row">
               <div class="field">
-                <label class="field-label">Username</label>
+                <label class="field-label" for="auth-basic-username">Username</label>
                 <input
+                  id="auth-basic-username"
                   class="field-input"
                   type="text"
                   .value=${this.auth.username ?? ''}
@@ -164,8 +167,9 @@ export class RunDocsAuthEditor extends LitElement {
                 />
               </div>
               <div class="field">
-                <label class="field-label">Password</label>
+                <label class="field-label" for="auth-basic-password">Password</label>
                 <input
+                  id="auth-basic-password"
                   class="field-input"
                   type="password"
                   .value=${this.auth.password ?? ''}
@@ -181,8 +185,9 @@ export class RunDocsAuthEditor extends LitElement {
         ? html`
             <div class="field-row">
               <div class="field">
-                <label class="field-label">Key Name</label>
+                <label class="field-label" for="auth-apikey-name">Key Name</label>
                 <input
+                  id="auth-apikey-name"
                   class="field-input"
                   type="text"
                   .value=${this.auth.apiKeyName ?? ''}
@@ -191,8 +196,9 @@ export class RunDocsAuthEditor extends LitElement {
                 />
               </div>
               <div class="field">
-                <label class="field-label">Value</label>
+                <label class="field-label" for="auth-apikey-value">Value</label>
                 <input
+                  id="auth-apikey-value"
                   class="field-input"
                   type="text"
                   .value=${this.auth.apiKeyValue ?? ''}

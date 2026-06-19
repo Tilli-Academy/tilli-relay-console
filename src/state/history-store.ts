@@ -3,6 +3,8 @@ import { getItem, setItem } from '../utils/local-storage.js';
 
 const STORAGE_KEY = 'history';
 const MAX_ENTRIES = 100;
+/** Cap persisted response body at 100 KB to avoid blowing localStorage quota. */
+const MAX_BODY_SIZE = 100_000;
 
 /**
  * Manages request history, backed by localStorage.
@@ -109,6 +111,15 @@ function redactEntry(entry: HistoryEntry): HistoryEntry {
     }
   }
 
+  // Truncate large response bodies to stay within localStorage quota
+  let response = entry.response;
+  if (response && response.body && response.body.length > MAX_BODY_SIZE) {
+    response = {
+      ...response,
+      body: response.body.slice(0, MAX_BODY_SIZE) + '\n\n[Truncated — response exceeded 100 KB]',
+    };
+  }
+
   return {
     ...entry,
     request: {
@@ -116,5 +127,6 @@ function redactEntry(entry: HistoryEntry): HistoryEntry {
       headers: redactedHeaders,
       auth: redactedAuth,
     },
+    response,
   };
 }

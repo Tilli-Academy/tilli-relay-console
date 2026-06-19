@@ -32,8 +32,11 @@ export function getItem<T>(key: string, fallback: T): T {
 export function setItem<T>(key: string, value: T): void {
   try {
     localStorage.setItem(`${PREFIX}${key}`, JSON.stringify(value));
-  } catch {
-    // localStorage might be full or disabled — silently ignore
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'QuotaExceededError') {
+      console.warn(`[RunDocs] localStorage quota exceeded while writing "${key}". Old history entries may need to be cleared.`);
+    }
+    // Other errors (localStorage disabled, etc.) are silently ignored
   }
 }
 

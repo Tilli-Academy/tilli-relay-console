@@ -14,13 +14,13 @@ RunDocs is an OpenAPI 3.x documentation UI with Postman-like UX, built as an ins
 - **Response Viewer** — Color-coded status badges, response time/size, formatted JSON body, response headers table. Loading overlay with spinner on the response area while a repeat request is in flight, providing visible feedback that the response is being refreshed.
 - **Schema Documentation** — Expandable property tree with types, constraints, descriptions; generated JSON examples
 - **Code Samples** — Dynamic snippets in cURL, JavaScript, Python, Node.js that reflect the user's auth config, custom headers, request body, resolved path/query params, and interpolated environment variables from the request builder. Copy-paste-ready: `{id}` becomes the actual UUID, `{{auth_token}}` becomes the real token. POST/PUT/PATCH methods always include `-d` in curl (matching Swagger UI): body editor content → `-d '...'`, empty body falls back to spec example from `getExampleBody()` → `-d '{"name":"example",...}'`, no spec example → `-d ''`. Endpoints with `requestBody` in spec get body editor pre-filled with `{}`. Supports Bearer, Basic, API Key (header/query), and OAuth2 auth. Header merge order: auth headers → custom headers → Content-Type/Accept defaults. User input (URLs, headers, body) is escaped per language: shell single-quote escaping (`'\''`) for cURL, backslash escaping for JS/Node strings. Content-Type is detected from spec's `requestBody.content` keys (supports `application/json`, `multipart/form-data`, `application/x-www-form-urlencoded`) instead of hardcoded.
-- **Request History** — Stores up to 100 requests in localStorage with full response data, path params, and query params. Auth secrets (tokens, passwords, API key values) and sensitive headers (Authorization, Cookie) are redacted before persisting — only auth type and non-sensitive metadata are saved to disk. Click to restore saved request/response/params, selected item highlighting, delete individual or clear all. Old entries without auth reset to "No Auth" on restore.
+- **Request History** — Stores up to 100 requests in localStorage with full response data, path params, and query params. Auth secrets (tokens, passwords, API key values) and sensitive headers (Authorization, Cookie) are redacted before persisting — only auth type and non-sensitive metadata are saved to disk. Response bodies exceeding 100 KB are truncated before persisting to stay within localStorage quota. Click to restore saved request/response/params, selected item highlighting, delete individual or clear all. Old entries without auth reset to "No Auth" on restore.
 - **Environment Variables** — Multiple environments (Dev, Staging, Prod), `{{variable}}` interpolation in URLs, headers, body, and auth fields (token, username, password, API key name/value). Auto-save indicator in env manager modal header (debounced 500ms). 200ms fade-in transition on the variables section when switching between environments in the manager modal. Variable values are kept in memory only — not persisted to localStorage (variable names and environment names are saved).
 - **Dark Mode** — Light/dark theme toggle, persisted to localStorage
 - **Fuzzy Search** — Filter endpoints instantly via fuse.js
 - **Resizable Split Pane** — Draggable sidebar/main divider, ratio persisted
 - **Server Middleware** — Express middleware and Fastify plugin for mounting RunDocs in Node.js apps, supports both `specUrl` and inline `spec` options, proxy-safe with relative asset paths and trailing slash redirect
-- **Accessibility** — ARIA labels, keyboard navigation, semantic HTML, focus management
+- **Accessibility** — Form labels connected via `for`/`id`, `aria-pressed` on toggle buttons, `role="alert"` on error states, `aria-busy` on loading, `aria-label` on selects/inputs, `.sr-only` utility class in baseStyles, keyboard navigation, semantic HTML, focus management
 
 ## Technology Stack
 
@@ -139,14 +139,15 @@ Uses `@lit/context` for downward data flow from `rundocs-app` (root) to all desc
 - **envContext** — environments + active environment ID
 - **uiContext** — theme, sidebar state, endpoint selection, history selection
 
-State stores (`src/state/`) are plain classes with `subscribe()`/`notify()` patterns and localStorage persistence. The root `rundocs-app` component owns store instances and provides context values.
+State stores (`src/state/`) are plain classes with `subscribe()`/`notify()` patterns and localStorage persistence. The root `rundocs-app` component owns store instances and provides context values. `RequestStore` has a `dispose()` method to clear listeners; per-endpoint stores are disposed and cleared when the spec changes or the component disconnects.
 
 ### Data Flow
 
 ```
-Spec loading (two paths):
+Spec loading (driven by updated() lifecycle only — no connectedCallback load):
   spec-url attribute → parser.ts (swagger-parser) → normalizer.ts → specContext
-  spec property (inline) → _loadInlineSpec() → parser.ts → normalizer.ts → specContext
+  spec property (inline object) → parseSpec (accepts object directly, no JSON round-trip) → normalizer.ts → specContext
+  AbortController cancels in-flight loads when a new load starts (prevents race conditions)
 
 Request flow:
   User builds request → RequestStore (per-endpoint)
@@ -174,7 +175,7 @@ Code samples (dynamic, fully resolved):
   → window.location.origin fallback when baseUrl is empty
 ```
 
-Each endpoint gets its own `RequestStore` instance, lazily created and tracked in a `Map<string, RequestStore>` in `rundocs-app`.
+Each endpoint gets its own `RequestStore` instance, lazily created and tracked in a `Map<string, RequestStore>` in `rundocs-app`. All stores are disposed (listeners cleared) and the map is emptied when the spec changes or the component disconnects, preventing memory leaks.
 
 ### Syntax Highlighting Architecture
 
@@ -203,6 +204,7 @@ The Express and Fastify middleware serve RunDocs as a self-contained UI at a mou
 - **Component naming**: `rundocs-*` prefix, kebab-case. Class name: `RunDocs*`, PascalCase
 - **Event naming**: kebab-case matching the action (`history-select`, `env-add`, `theme-toggle`)
 - **No sibling communication**: Components never talk directly. Child fires event → parent updates context → sibling re-renders
+- **Emit-only editors**: Key-value-editor and similar input components do NOT mutate their own `@property()` data. They emit events with the new state and let the parent pass updated data back down (single source of truth, avoids double renders)
 - **Middleware imports**: Server framework dependencies (express, fastify) use `require()` at runtime, never top-level `import`, since users provide these packages themselves
 
 ## Project Structure
@@ -212,7 +214,7 @@ rundocs/
 ├── src/
 │   ├── components/
 │   │   ├── app/
-│   │   │   └── rundocs-app.ts              # Root component — owns contexts, parses spec (specUrl or inline spec property)
+│   │   │   └── rundocs-app.ts              # Root component — owns contexts, parses spec (specUrl or inline spec property), AbortController for load cancellation, disposes stores on spec change
 │   │   ├── code/
 │   │   │   ├── rundocs-code-block.ts        # Single code snippet display
 │   │   │   └── rundocs-code-samples.ts      # Multi-language code sample tabs
@@ -263,10 +265,10 @@ rundocs/
 │   │       ├── rundocs-badge.ts             # Generic colored badge
 │   │       ├── rundocs-loading.ts           # Loading spinner
 │   │       ├── rundocs-empty-state.ts       # Empty state placeholder
-│   │       └── rundocs-key-value-editor.ts  # Reusable key-value pair editor
+│   │       └── rundocs-key-value-editor.ts  # Reusable key-value pair editor (emit-only, parent owns data)
 │   ├── core/
 │   │   ├── types.ts                          # TypeScript interfaces
-│   │   ├── parser.ts                         # OpenAPI spec fetching and parsing (rejects Swagger 2.0 with conversion link)
+│   │   ├── parser.ts                         # OpenAPI spec fetching and parsing (accepts string or object, rejects Swagger 2.0 with conversion link)
 │   │   ├── normalizer.ts                     # Raw spec → RunDocsSpec transformation
 │   │   ├── schema-resolver.ts                # $ref dereferencing + example generation
 │   │   └── code-gen.ts                       # Dynamic code sample generation (4 languages, auth/headers/body from request builder, POST/PUT/PATCH always include -d, window.location.origin fallback, spec example fallback via getExampleBody, per-language escaping, content-type detection from spec)
@@ -277,8 +279,8 @@ rundocs/
 │   ├── state/
 │   │   ├── contexts.ts                       # Lit context definitions
 │   │   ├── spec-store.ts                     # Parsed spec state
-│   │   ├── request-store.ts                  # Per-endpoint request state
-│   │   ├── history-store.ts                  # Request history (localStorage, max 100, auth secrets redacted before persisting)
+│   │   ├── request-store.ts                  # Per-endpoint request state (dispose() clears listeners for GC)
+│   │   ├── history-store.ts                  # Request history (localStorage, max 100, auth secrets redacted, response body capped at 100 KB before persisting)
 │   │   ├── env-store.ts                      # Environments + variables (localStorage, all variable values redacted before persisting — memory only)
 │   │   └── ui-store.ts                       # Theme, sidebar, layout state, history selection
 │   ├── styles/
@@ -293,7 +295,7 @@ rundocs/
 │   │   ├── env-interpolator.ts               # {{variable}} substitution
 │   │   ├── prism-highlight.ts                # Prism.js syntax highlighting (code samples + schema)
 │   │   ├── codemirror-theme.ts               # CodeMirror editor theme (maps --sx-syntax-* vars)
-│   │   ├── local-storage.ts                  # JSON get/set/remove helpers
+│   │   ├── local-storage.ts                  # JSON get/set/remove helpers (warns on QuotaExceededError)
 │   │   └── markdown.ts                       # Markdown → HTML conversion (link URLs sanitized: scheme allowlist + quote escaping)
 │   ├── index.ts                              # Package entry point + CSS import
 │   ├── define.ts                             # Component auto-registration
@@ -493,6 +495,15 @@ npx pnpm run test:watch                      # Watch mode for development
 | `test:e2e` script broken | Referenced `playwright test` but Playwright was never installed | Fixed: removed dead script from `package.json` |
 | Swagger 2.0 spec shows wrong types | Normalizer assumes OAS3 `param.schema` — 2.0 puts type directly on param, so everything falls back to `string` | Fixed: `parser.ts` now rejects 2.0 specs with a clear error and conversion link. Scoped to OpenAPI 3.x only. |
 | Demo server 404 on CSS/JS files | `getDistDir()` resolved to `src/` when running from source instead of `dist/` | Fixed: detect `src/middleware` path and resolve to `../../dist` instead of `..` |
+| RequestStore memory leak on spec change | Per-endpoint stores cached in Map, never evicted when spec changes — listeners accumulate | Fixed: `dispose()` clears listeners, `_clearRequestStores()` called on spec change and disconnect |
+| localStorage quota exceeded silently | `setItem()` swallowed all errors including `QuotaExceededError` — user never knew history was lost | Fixed: `console.warn()` on quota errors; response bodies >100 KB truncated before persisting |
+| Overlapping spec loads race condition | Two rapid spec-url changes could cause the slower load to overwrite the newer one | Fixed: `AbortController` cancels in-flight loads; results from aborted loads are discarded |
+| Double spec load on mount | `connectedCallback` and `updated()` both called `_loadSpec()` on initial render | Fixed: removed load from `connectedCallback` — `updated()` handles all spec loading |
+| Key-value-editor dual source of truth | Component mutated its own `pairs` @property AND emitted to parent — double render, possible desync | Fixed: emit-only pattern — handlers create new array and emit, never set `this.pairs` |
+| Inline spec JSON round-trip | `_loadInlineSpec()` did `JSON.stringify(obj)` → `parseSpec()` → `JSON.parse()` back to object | Fixed: `parseSpec()` accepts objects directly, skips string parsing step |
+| Auth editor labels not connected to inputs | `<label>` and `<input>` not linked via `for`/`id` — screen readers can't associate them | Fixed: added `for`/`id` pairs on all auth fields (bearer token, username, password, API key name/value) |
+| Toggle buttons missing aria-pressed | Pretty/Raw/Word Wrap buttons had no pressed state for screen readers | Fixed: added `aria-pressed` attribute that tracks active state |
+| Error message not announced by screen readers | Error div had no ARIA role — screen readers wouldn't announce spec load failures | Fixed: added `role="alert"` to error div, `aria-busy` to loading container |
 
 ## TypeScript Strictness
 

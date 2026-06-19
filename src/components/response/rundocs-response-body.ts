@@ -279,13 +279,15 @@ export class RunDocsResponseBody extends LitElement {
           <span class="content-type">${this.contentType}</span>
           ${isJson
             ? html`
-                <div class="view-toggle">
+                <div class="view-toggle" role="group" aria-label="View mode">
                   <button
                     class="view-btn ${this._viewMode === 'pretty' ? 'active' : ''}"
+                    aria-pressed=${this._viewMode === 'pretty'}
                     @click=${() => { this._viewMode = 'pretty'; }}
                   >Pretty</button>
                   <button
                     class="view-btn ${this._viewMode === 'raw' ? 'active' : ''}"
+                    aria-pressed=${this._viewMode === 'raw'}
                     @click=${() => { this._viewMode = 'raw'; }}
                   >Raw</button>
                 </div>
@@ -295,6 +297,7 @@ export class RunDocsResponseBody extends LitElement {
         <div class="body-actions">
           <button
             class="wrap-toggle ${this._wordWrap ? 'active' : ''}"
+            aria-pressed=${this._wordWrap}
             @click=${() => { this._wordWrap = !this._wordWrap; }}
           >
             Word Wrap

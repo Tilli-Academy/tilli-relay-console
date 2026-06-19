@@ -128,6 +128,9 @@ export class RunDocsApp extends LitElement {
   // Search index
   private _fuse: Fuse<Endpoint> | null = null;
 
+  // Abort controller for cancelling in-flight spec loads
+  private _loadAbort: AbortController | null = null;
+
   // Per-endpoint request stores
   private _requestStores = new Map<string, RequestStore>();
 
@@ -177,18 +180,15 @@ export class RunDocsApp extends LitElement {
 
     // Apply initial theme
     this.setAttribute('theme', this.appTheme);
-
-    if (this.specUrl) {
-      this._loadSpec();
-    } else if (this.spec) {
-      this._loadInlineSpec();
-    }
+    // Spec loading is handled by updated() — avoids double-load on initial render
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
+    this._loadAbort?.abort();
     for (const unsub of this._unsubs) unsub();
     this._unsubs = [];
+    this._clearRequestStores();
   }
 
   override updated(changedProperties: Map<string, unknown>) {
@@ -203,37 +203,64 @@ export class RunDocsApp extends LitElement {
     }
   }
 
+  /** Dispose all per-endpoint request stores so they can be GC'd. */
+  private _clearRequestStores() {
+    for (const store of this._requestStores.values()) {
+      store.dispose();
+    }
+    this._requestStores.clear();
+    this._headerPairsMap.clear();
+  }
+
   private async _loadSpec() {
+    this._loadAbort?.abort();
+    const controller = new AbortController();
+    this._loadAbort = controller;
+
+    this._clearRequestStores();
     this._loading = true;
     this._error = null;
     try {
       const { parseSpec } = await import('../../core/parser.js');
       const { normalize } = await import('../../core/normalizer.js');
       const openApiDoc = await parseSpec(this.specUrl);
+      if (controller.signal.aborted) return;
       this._spec = normalize(openApiDoc);
       this._buildSearchIndex();
       this._filteredTags = this._spec.tags;
     } catch (err) {
+      if (controller.signal.aborted) return;
       this._error = err instanceof Error ? err.message : 'Failed to load OpenAPI spec';
     } finally {
-      this._loading = false;
+      if (!controller.signal.aborted) {
+        this._loading = false;
+      }
     }
   }
 
   private async _loadInlineSpec() {
+    this._loadAbort?.abort();
+    const controller = new AbortController();
+    this._loadAbort = controller;
+
+    this._clearRequestStores();
     this._loading = true;
     this._error = null;
     try {
       const { normalize } = await import('../../core/normalizer.js');
       const { parseSpec } = await import('../../core/parser.js');
-      const openApiDoc = await parseSpec(JSON.stringify(this.spec));
+      const openApiDoc = await parseSpec(this.spec!);
+      if (controller.signal.aborted) return;
       this._spec = normalize(openApiDoc);
       this._buildSearchIndex();
       this._filteredTags = this._spec.tags;
     } catch (err) {
+      if (controller.signal.aborted) return;
       this._error = err instanceof Error ? err.message : 'Failed to parse inline spec';
     } finally {
-      this._loading = false;
+      if (!controller.signal.aborted) {
+        this._loading = false;
+      }
     }
   }
 
@@ -552,7 +579,7 @@ export class RunDocsApp extends LitElement {
   override render() {
     if (this._loading) {
       return html`
-        <div class="center-container">
+        <div class="center-container" aria-busy="true">
           <rundocs-loading size="large" message="Loading API specification..."></rundocs-loading>
         </div>
       `;
@@ -561,7 +588,7 @@ export class RunDocsApp extends LitElement {
     if (this._error) {
       return html`
         <div class="center-container">
-          <div class="error-message">${this._error}</div>
+          <div class="error-message" role="alert">${this._error}</div>
         </div>
       `;
     }

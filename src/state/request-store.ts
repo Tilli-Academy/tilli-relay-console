@@ -117,4 +117,9 @@ export class RequestStore {
     };
     this._notify();
   }
+
+  /** Remove all listeners so the store can be garbage-collected. */
+  dispose(): void {
+    this._listeners.clear();
+  }
 }

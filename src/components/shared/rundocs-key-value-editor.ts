@@ -140,10 +140,11 @@ export class RunDocsKeyValueEditor extends LitElement {
   @property({ type: String, attribute: 'value-placeholder' })
   valuePlaceholder = 'Value';
 
-  private _emit() {
+  /** Emit new pairs without mutating the property — parent owns the data. */
+  private _emit(newPairs: KeyValuePair[]) {
     this.dispatchEvent(
       new CustomEvent('kv-change', {
-        detail: { pairs: [...this.pairs] },
+        detail: { pairs: newPairs },
         bubbles: true,
         composed: true,
       }),
@@ -151,30 +152,25 @@ export class RunDocsKeyValueEditor extends LitElement {
   }
 
   private _toggleEnabled(index: number) {
-    this.pairs = this.pairs.map((p, i) =>
+    this._emit(this.pairs.map((p, i) =>
       i === index ? { ...p, enabled: !p.enabled } : p,
-    );
-    this._emit();
+    ));
   }
 
   private _updateKey(index: number, key: string) {
-    this.pairs = this.pairs.map((p, i) => (i === index ? { ...p, key } : p));
-    this._emit();
+    this._emit(this.pairs.map((p, i) => (i === index ? { ...p, key } : p)));
   }
 
   private _updateValue(index: number, value: string) {
-    this.pairs = this.pairs.map((p, i) => (i === index ? { ...p, value } : p));
-    this._emit();
+    this._emit(this.pairs.map((p, i) => (i === index ? { ...p, value } : p)));
   }
 
   private _removeRow(index: number) {
-    this.pairs = this.pairs.filter((_, i) => i !== index);
-    this._emit();
+    this._emit(this.pairs.filter((_, i) => i !== index));
   }
 
   private _addRow() {
-    this.pairs = [...this.pairs, { key: '', value: '', enabled: true }];
-    this._emit();
+    this._emit([...this.pairs, { key: '', value: '', enabled: true }]);
   }
 
   override render() {

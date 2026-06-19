@@ -146,6 +146,7 @@ export class RunDocsRequestBar extends LitElement {
           class="method-select"
           .value=${this.method}
           @change=${this._onMethodChange}
+          aria-label="HTTP method"
         >
           ${METHODS.map(
             (m) => html`<option value=${m} ?selected=${m === this.method}>${m.toUpperCase()}</option>`,
@@ -156,6 +157,7 @@ export class RunDocsRequestBar extends LitElement {
           type="text"
           .value=${this.url}
           placeholder="Enter request URL"
+          aria-label="Request URL"
           @input=${this._onUrlInput}
           @keydown=${this._onKeyDown}
         />

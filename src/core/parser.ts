@@ -1,18 +1,21 @@
 import SwaggerParser from '@apidevtools/swagger-parser';
 
 /**
- * Parses and validates an OpenAPI spec from a URL or inline content.
+ * Parses and validates an OpenAPI spec from a URL, inline content, or object.
  * Supports OpenAPI 3.0 and 3.1.
  * Dereferences all $ref pointers so the returned doc is fully resolved.
  *
- * @param specUrlOrContent - URL to a JSON/YAML spec, or inline JSON string
+ * @param specUrlOrContent - URL to a JSON/YAML spec, inline JSON/YAML string, or parsed object
  * @returns Fully dereferenced OpenAPI document
  */
-export async function parseSpec(specUrlOrContent: string): Promise<Record<string, unknown>> {
+export async function parseSpec(specUrlOrContent: string | Record<string, unknown>): Promise<Record<string, unknown>> {
   try {
     let input: string | Record<string, unknown>;
 
-    if (
+    if (typeof specUrlOrContent === 'object') {
+      // Already-parsed object — skip string parsing (avoids JSON round-trip)
+      input = specUrlOrContent;
+    } else if (
       specUrlOrContent.startsWith('{') ||
       specUrlOrContent.startsWith('openapi') ||
       specUrlOrContent.startsWith('swagger')
