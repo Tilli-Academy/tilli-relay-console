@@ -31,9 +31,16 @@ export interface ApiInfo {
   };
 }
 
+export interface ServerVariable {
+  default: string;
+  enum?: string[];
+  description?: string;
+}
+
 export interface ServerInfo {
   url: string;
   description?: string;
+  variables?: Record<string, ServerVariable>;
 }
 
 export interface TagGroup {
@@ -92,7 +99,7 @@ export interface ResponseDef {
 }
 
 export interface ResolvedSchema {
-  type?: string;
+  type?: string | string[];
   format?: string;
   properties?: Record<string, ResolvedSchema>;
   items?: ResolvedSchema;

@@ -2,6 +2,7 @@ import type {
   RunDocsSpec,
   ApiInfo,
   ServerInfo,
+  ServerVariable,
   TagGroup,
   Endpoint,
   Parameter,
@@ -64,10 +65,30 @@ function extractServers(doc: Record<string, unknown>): ServerInfo[] {
     }
     return [{ url: '/' }];
   }
-  return servers.map((s) => ({
-    url: s.url as string,
-    description: s.description as string | undefined,
-  }));
+  return servers.map((s) => {
+    const rawVars = s.variables as Record<string, Record<string, unknown>> | undefined;
+    let url = s.url as string;
+    let variables: Record<string, ServerVariable> | undefined;
+
+    if (rawVars) {
+      variables = {};
+      for (const [name, v] of Object.entries(rawVars)) {
+        variables[name] = {
+          default: (v.default as string) || '',
+          enum: v.enum as string[] | undefined,
+          description: v.description as string | undefined,
+        };
+        // Substitute variable default into URL
+        url = url.replaceAll(`{${name}}`, (v.default as string) || '');
+      }
+    }
+
+    return {
+      url,
+      description: s.description as string | undefined,
+      ...(variables ? { variables } : {}),
+    };
+  });
 }
 
 function extractSecuritySchemes(doc: Record<string, unknown>): Record<string, SecurityScheme> {
@@ -87,6 +108,7 @@ function extractSecuritySchemes(doc: Record<string, unknown>): Record<string, Se
 
 function extractEndpoints(doc: Record<string, unknown>): Endpoint[] {
   const paths = (doc.paths || {}) as Record<string, Record<string, unknown>>;
+  const globalSecurity = (doc.security || []) as Endpoint['security'];
   const endpoints: Endpoint[] = [];
 
   for (const [path, pathItem] of Object.entries(paths)) {
@@ -100,7 +122,9 @@ function extractEndpoints(doc: Record<string, unknown>): Endpoint[] {
       if (!operation) continue;
 
       const operationParams = (operation.parameters || []) as unknown[];
-      const allParams = [...pathParams, ...operationParams].map(normalizeParameter);
+      const allParams = deduplicateParams(
+        [...pathParams, ...operationParams].map(normalizeParameter),
+      );
 
       const endpoint: Endpoint = {
         id: `${method.toUpperCase()}:${path}`,
@@ -115,7 +139,9 @@ function extractEndpoints(doc: Record<string, unknown>): Endpoint[] {
         responses: normalizeResponses(
           (operation.responses || {}) as Record<string, Record<string, unknown>>,
         ),
-        security: (operation.security || []) as Endpoint['security'],
+        security: operation.security !== undefined
+          ? (operation.security as Endpoint['security'])
+          : globalSecurity,
         operationId: operation.operationId as string | undefined,
       };
 
@@ -136,6 +162,15 @@ function normalizeParameter(raw: unknown): Parameter {
     description: param.description as string | undefined,
     example: param.example,
   };
+}
+
+/** Deduplicate parameters by name+in, keeping the last occurrence (operation-level wins). */
+function deduplicateParams(params: Parameter[]): Parameter[] {
+  const seen = new Map<string, Parameter>();
+  for (const param of params) {
+    seen.set(`${param.in}:${param.name}`, param);
+  }
+  return Array.from(seen.values());
 }
 
 function normalizeRequestBody(
@@ -164,10 +199,12 @@ function normalizeResponses(
 }
 
 function groupByTags(endpoints: Endpoint[], doc: Record<string, unknown>): TagGroup[] {
-  const tagDescriptions = new Map<string, string>();
   const docTags = (doc.tags || []) as Array<Record<string, string>>;
-  for (const tag of docTags) {
-    tagDescriptions.set(tag.name, tag.description || '');
+  const tagDescriptions = new Map<string, string>();
+  const tagOrder = new Map<string, number>();
+  for (let i = 0; i < docTags.length; i++) {
+    tagDescriptions.set(docTags[i].name, docTags[i].description || '');
+    tagOrder.set(docTags[i].name, i);
   }
 
   const tagMap = new Map<string, Endpoint[]>();
@@ -188,6 +225,13 @@ function groupByTags(endpoints: Endpoint[], doc: Record<string, unknown>): TagGr
       endpoints: tagEndpoints,
     });
   }
+
+  // Sort by doc.tags order; tags not in doc.tags go at the end
+  result.sort((a, b) => {
+    const orderA = tagOrder.get(a.name) ?? Infinity;
+    const orderB = tagOrder.get(b.name) ?? Infinity;
+    return orderA - orderB;
+  });
 
   return result;
 }

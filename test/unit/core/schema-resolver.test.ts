@@ -223,5 +223,107 @@ describe('schema-resolver', () => {
     it('returns "any" for unknown type', () => {
       expect(getSchemaTypeLabel({})).toBe('any');
     });
+
+    it('returns "string | null" when nullable is true', () => {
+      expect(getSchemaTypeLabel({ type: 'string', nullable: true })).toBe('string | null');
+    });
+
+    it('returns "integer | null" for nullable integer', () => {
+      expect(getSchemaTypeLabel({ type: 'integer', nullable: true })).toBe('integer | null');
+    });
+
+    it('returns "string (email) | null" for nullable formatted string', () => {
+      expect(getSchemaTypeLabel({ type: 'string', format: 'email', nullable: true })).toBe('string (email) | null');
+    });
+
+    it('returns "string[] | null" for nullable array', () => {
+      expect(getSchemaTypeLabel({ type: 'array', items: { type: 'string' }, nullable: true })).toBe('string[] | null');
+    });
+
+    it('returns "object | null" for nullable allOf', () => {
+      expect(getSchemaTypeLabel({
+        allOf: [{ type: 'object', properties: { id: { type: 'integer' } } }],
+        nullable: true,
+      })).toBe('object | null');
+    });
+
+    it('does not append null when nullable is false', () => {
+      expect(getSchemaTypeLabel({ type: 'string', nullable: false })).toBe('string');
+    });
+
+    it('handles OAS 3.1 array type ["string", "null"]', () => {
+      expect(getSchemaTypeLabel({ type: ['string', 'null'] })).toBe('string | null');
+    });
+
+    it('handles OAS 3.1 array type ["integer", "null"]', () => {
+      expect(getSchemaTypeLabel({ type: ['integer', 'null'] })).toBe('integer | null');
+    });
+
+    it('handles OAS 3.1 single-element array type', () => {
+      expect(getSchemaTypeLabel({ type: ['string'] })).toBe('string');
+    });
+  });
+
+  describe('generateExample() with OAS 3.1 array type', () => {
+    it('generates string example for type: ["string", "null"]', () => {
+      const schema: ResolvedSchema = { type: ['string', 'null'] };
+      expect(generateExample(schema)).toBe('string');
+    });
+
+    it('generates integer example for type: ["integer", "null"]', () => {
+      const schema: ResolvedSchema = { type: ['integer', 'null'] };
+      expect(generateExample(schema)).toBe(0);
+    });
+  });
+
+  describe('flattenSchema() improvements', () => {
+    it('preserves format from allOf sub-schema', () => {
+      const schema: ResolvedSchema = {
+        allOf: [
+          { type: 'object', properties: { email: { type: 'string', format: 'email' } } },
+          { properties: { name: { type: 'string' } }, required: ['name'] },
+        ],
+      };
+      const result = flattenSchema(schema);
+      expect(result.properties).toHaveProperty('email');
+      expect(result.properties).toHaveProperty('name');
+      expect(result.required).toContain('name');
+    });
+
+    it('preserves nullable from allOf sub-schema', () => {
+      const schema: ResolvedSchema = {
+        allOf: [
+          { type: 'object', properties: { id: { type: 'integer' } }, nullable: true },
+        ],
+      };
+      const result = flattenSchema(schema);
+      expect(result.nullable).toBe(true);
+    });
+
+    it('preserves type and format from allOf sub-schemas', () => {
+      const schema: ResolvedSchema = {
+        allOf: [
+          { type: 'string', format: 'date-time' },
+          { description: 'A timestamp' },
+        ],
+      };
+      const result = flattenSchema(schema);
+      expect(result.type).toBe('string');
+      expect(result.format).toBe('date-time');
+      expect(result.description).toBe('A timestamp');
+    });
+
+    it('parent schema fields override allOf sub-schema fields', () => {
+      const schema: ResolvedSchema = {
+        allOf: [
+          { type: 'object', properties: { id: { type: 'integer' } } },
+        ],
+        description: 'Parent description',
+        nullable: true,
+      };
+      const result = flattenSchema(schema);
+      expect(result.description).toBe('Parent description');
+      expect(result.nullable).toBe(true);
+    });
   });
 });

@@ -3,6 +3,25 @@ import type { ResolvedSchema } from './types.js';
 const MAX_DEPTH = 10;
 
 /**
+ * Normalizes OAS 3.1 array `type` (e.g., ["string", "null"]) into a
+ * single type string and a nullable flag.
+ */
+function normalizeType(schema: ResolvedSchema): { type: string | undefined; nullable: boolean } {
+  const rawType = schema.type;
+  if (Array.isArray(rawType)) {
+    const types = rawType.filter((t) => t !== 'null');
+    return {
+      type: types[0] || undefined,
+      nullable: rawType.includes('null'),
+    };
+  }
+  return {
+    type: rawType,
+    nullable: schema.nullable === true,
+  };
+}
+
+/**
  * Generates an example value from a resolved OpenAPI schema.
  * Handles nested objects, arrays, allOf/oneOf/anyOf, and circular refs.
  */
@@ -27,8 +46,11 @@ export function generateExample(schema: ResolvedSchema, depth = 0): unknown {
     return generateExample(schema.anyOf[0], depth + 1);
   }
 
+  // Normalize OAS 3.1 array type
+  const { type } = normalizeType(schema);
+
   // Handle by type
-  switch (schema.type) {
+  switch (type) {
     case 'object':
       return generateObjectExample(schema, depth);
     case 'array':
@@ -37,7 +59,7 @@ export function generateExample(schema: ResolvedSchema, depth = 0): unknown {
       return generateStringExample(schema);
     case 'number':
     case 'integer':
-      return generateNumberExample(schema);
+      return generateNumberExample(schema, type);
     case 'boolean':
       return true;
     case 'null':
@@ -98,10 +120,10 @@ function generateStringExample(schema: ResolvedSchema): string {
   }
 }
 
-function generateNumberExample(schema: ResolvedSchema): number {
+function generateNumberExample(schema: ResolvedSchema, type: string): number {
   if (schema.minimum !== undefined) return schema.minimum;
   if (schema.maximum !== undefined) return schema.maximum;
-  if (schema.type === 'integer') return 0;
+  if (type === 'integer') return 0;
   return 0.0;
 }
 
@@ -142,37 +164,68 @@ export function flattenSchema(schema: ResolvedSchema): ResolvedSchema {
     if (flat.description && !merged.description) {
       merged.description = flat.description;
     }
+    // Merge additional scalar fields (last-wins for conflicts)
+    if (flat.type) merged.type = flat.type;
+    if (flat.format) merged.format = flat.format;
+    if (flat.enum) merged.enum = flat.enum;
+    if (flat.nullable !== undefined) merged.nullable = flat.nullable;
+    if (flat.additionalProperties !== undefined) {
+      merged.additionalProperties = flat.additionalProperties;
+    }
+    if (flat.title && !merged.title) merged.title = flat.title;
+    if (flat.minimum !== undefined) merged.minimum = flat.minimum;
+    if (flat.maximum !== undefined) merged.maximum = flat.maximum;
+    if (flat.minLength !== undefined) merged.minLength = flat.minLength;
+    if (flat.maxLength !== undefined) merged.maxLength = flat.maxLength;
+    if (flat.pattern) merged.pattern = flat.pattern;
   }
 
-  // Copy over any direct properties from the parent schema
+  // Copy over any direct properties from the parent schema (overrides allOf)
   if (schema.properties) {
     merged.properties = { ...merged.properties, ...schema.properties };
   }
   if (schema.required) {
     merged.required = [...(merged.required || []), ...schema.required];
   }
+  if (schema.description) merged.description = schema.description;
+  if (schema.nullable !== undefined) merged.nullable = schema.nullable;
+  if (schema.format) merged.format = schema.format;
 
   return merged;
 }
 
 /**
  * Gets a human-readable type string for a schema.
- * Examples: "string", "integer", "object", "string[]", "Pet", "string (email)"
+ * Examples: "string", "integer", "object", "string[]", "Pet", "string (email)",
+ *           "string | null", "integer | null"
  */
 export function getSchemaTypeLabel(schema: ResolvedSchema): string {
   if (schema.title) return schema.title;
 
-  if (schema.type === 'array' && schema.items) {
+  const { type, nullable } = normalizeType(schema);
+
+  if (type === 'array' && schema.items) {
     const itemType = getSchemaTypeLabel(schema.items);
-    return `${itemType}[]`;
+    const label = `${itemType}[]`;
+    return nullable ? `${label} | null` : label;
   }
 
   if (schema.oneOf) return schema.oneOf.map(getSchemaTypeLabel).join(' | ');
   if (schema.anyOf) return schema.anyOf.map(getSchemaTypeLabel).join(' | ');
-  if (schema.allOf) return 'object';
-  if (schema.enum) return `enum(${schema.enum.join(', ')})`;
+  if (schema.allOf) {
+    return nullable ? 'object | null' : 'object';
+  }
+  if (schema.enum) {
+    const label = `enum(${schema.enum.join(', ')})`;
+    return nullable ? `${label} | null` : label;
+  }
 
-  const base = schema.type || 'any';
-  if (schema.format) return `${base} (${schema.format})`;
-  return base;
+  const base = type || 'any';
+  let label: string;
+  if (schema.format) {
+    label = `${base} (${schema.format})`;
+  } else {
+    label = base;
+  }
+  return nullable ? `${label} | null` : label;
 }

@@ -80,7 +80,7 @@ RunDocs is an OpenAPI 3.x documentation UI with Postman-like UX, built as an ins
 |---|---|
 | Source code (42 components) | Done |
 | Dual build system (Vite + tsup) | Done |
-| Unit tests (493 tests, 59 files) | Done |
+| Unit tests (521 tests, 59 files) | Done |
 | Accessibility audit + fixes | Done |
 | TypeScript strict mode | Done |
 | Dev server (Vite) | Done |
@@ -268,10 +268,10 @@ rundocs/
 │   │       ├── rundocs-empty-state.ts       # Empty state placeholder
 │   │       └── rundocs-key-value-editor.ts  # Reusable key-value pair editor (emit-only, parent owns data)
 │   ├── core/
-│   │   ├── types.ts                          # TypeScript interfaces
+│   │   ├── types.ts                          # TypeScript interfaces (ServerVariable, ResolvedSchema.type supports string | string[] for OAS 3.1)
 │   │   ├── parser.ts                         # OpenAPI spec fetching and parsing (accepts string or object, rejects Swagger 2.0 with conversion link)
-│   │   ├── normalizer.ts                     # Raw spec → RunDocsSpec transformation
-│   │   ├── schema-resolver.ts                # $ref dereferencing + example generation
+│   │   ├── normalizer.ts                     # Raw spec → RunDocsSpec transformation (param dedup by name+in, global security fallback, tag ordering from doc.tags, server variable substitution)
+│   │   ├── schema-resolver.ts                # $ref dereferencing + example generation (OAS 3.1 array type, nullable labels, improved allOf flattening)
 │   │   └── code-gen.ts                       # Dynamic code sample generation (4 languages, auth/headers/body from request builder, POST/PUT/PATCH always include -d, window.location.origin fallback, spec example fallback via getExampleBody, per-language escaping, content-type detection from spec)
 │   ├── middleware/
 │   │   ├── express.ts                        # Express router middleware (trailing slash redirect)
@@ -384,7 +384,7 @@ npx pnpm dev                    # Start Vite dev server (loads Petstore spec)
 npx pnpm run typecheck          # TypeScript type checking (strict, noUnusedLocals/Params)
 
 # Testing
-npx pnpm test                   # Run all 493 tests once
+npx pnpm test                   # Run all 521 tests once
 npx pnpm run test:watch         # Run tests in watch mode
 npx vitest run test/unit/core/  # Run tests in a specific directory
 npx vitest run -t "parseSpec"   # Run tests matching a name pattern
@@ -409,7 +409,7 @@ npx pnpm run clean              # Delete dist/ folder
 
 ### Overview
 
-- **493 tests** across **59 test files** (488 base + 5 Phase 6 additions)
+- **521 tests** across **59 test files** (488 base + 5 Phase 6 additions + 28 Minor Issue 1 additions)
 - **Test runner**: Vitest with happy-dom environment
 - **Component testing**: @open-wc/testing for Lit component fixtures
 - **All tests pass** with TypeScript compiling cleanly
@@ -512,6 +512,13 @@ npx pnpm run test:watch                      # Watch mode for development
 | History/env IDs collision risk | `Date.now() + Math.random().toString(36)` IDs could collide under rapid use | Fixed: replaced with `crypto.randomUUID()` for standard UUID v4 generation |
 | `import.meta` CJS build warning | tsup warns about `import.meta.url` when building middleware CJS output | Fixed: `esbuildOptions.logOverride` silences `empty-import-meta` for CJS format in `tsup.config.ts` |
 | Prism.js breaks under strict CSP | `new Function()` in `prism-highlight.ts` is blocked by `script-src` CSP without `'unsafe-eval'` | Known limitation — documented with CSP warning comment; future refactor should use Prism ESM imports |
+| Duplicate path+operation params | Path-level and operation-level params with same `name+in` both appeared | Fixed: `deduplicateParams()` uses Map keyed by `in:name`, operation-level overwrites path-level |
+| Global security ignored | Operations without `security` got empty array instead of `doc.security` fallback | Fixed: `undefined` falls back to `doc.security`; explicit `[]` means no security |
+| Tags in wrong order | Tags ordered by first endpoint appearance, not `doc.tags` array | Fixed: `groupByTags()` sorts by `doc.tags` index, unknown tags sort to end |
+| Server URLs show `{variable}` placeholders | Variables like `{environment}` not substituted in server URLs | Fixed: `extractServers()` replaces `{var}` with variable default values, stores raw variables for future UI |
+| `getSchemaTypeLabel` missing nullable | `{ type: 'string', nullable: true }` returned `"string"` instead of `"string \| null"` | Fixed: `normalizeType()` checks `nullable` flag and OAS 3.1 array type, appends ` \| null` |
+| OAS 3.1 `type: ["string", "null"]` not handled | swagger-parser passes array types through as-is, code assumed `type` is always a string | Fixed: `normalizeType()` extracts non-null type from array, sets nullable flag |
+| `flattenSchema` loses fields from allOf | Only merged `properties`, `required`, `description` — lost `type`, `format`, `nullable`, constraints | Fixed: merges all scalar fields (type, format, enum, nullable, constraints, title, additionalProperties), parent schema fields take precedence |
 
 ## TypeScript Strictness
 
