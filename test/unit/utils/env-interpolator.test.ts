@@ -50,9 +50,15 @@ describe('interpolate', () => {
     expect(result).toBe('https://api.example.com:8080/v1/pets');
   });
 
-  it('does not match non-word characters in placeholder names', () => {
-    // \w matches [a-zA-Z0-9_], so {{foo-bar}} should NOT be replaced
-    const result = interpolate('{{foo-bar}}', { 'foo-bar': 'value' });
-    expect(result).toBe('{{foo-bar}}');
+  it('matches dotted and hyphenated placeholder names', () => {
+    // [\w.-]+ matches hyphens and dots in variable names
+    expect(interpolate('{{foo-bar}}', { 'foo-bar': 'value' })).toBe('value');
+    expect(interpolate('{{api.host}}', { 'api.host': 'example.com' })).toBe('example.com');
+  });
+
+  it('does not match special characters in placeholder names', () => {
+    // Characters like spaces, slashes, etc. are not matched
+    const result = interpolate('{{foo bar}}', { 'foo bar': 'value' });
+    expect(result).toBe('{{foo bar}}');
   });
 });

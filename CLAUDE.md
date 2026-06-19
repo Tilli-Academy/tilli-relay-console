@@ -80,7 +80,7 @@ RunDocs is an OpenAPI 3.x documentation UI with Postman-like UX, built as an ins
 |---|---|
 | Source code (42 components) | Done |
 | Dual build system (Vite + tsup) | Done |
-| Unit tests (488 tests, 59 files) | Done |
+| Unit tests (493 tests, 59 files) | Done |
 | Accessibility audit + fixes | Done |
 | TypeScript strict mode | Done |
 | Dev server (Vite) | Done |
@@ -101,6 +101,7 @@ RunDocs is an OpenAPI 3.x documentation UI with Postman-like UX, built as an ins
 - **Frontend**: `dist/rundocs.es.js` (ES module), `dist/rundocs.js` (UMD bundle), `dist/rundocs.css` — 272.5KB gzipped
 - **Middleware**: `dist/middleware/{express,fastify}.{js,cjs}` with TypeScript declarations
 - **Types**: `dist/middleware/{express,fastify}.d.ts` (middleware only — no `dist/index.d.ts` yet, needed before npm publish)
+- **Sourcemaps**: Generated locally but excluded from npm package via `"!dist/**/*.map"` in `files` array
 
 ### Package Exports
 
@@ -159,7 +160,7 @@ History restore:
   Click history item → _onHistorySelect() → loads saved request + response + auth + pathParams + queryParams into RequestStore
   Old entries without auth → resets to { type: 'none' }
 
-Environment vars → env-interpolator.ts → replaces {{var}} in URLs, headers, body, and auth fields
+Environment vars → env-interpolator.ts → replaces {{var}} in URLs, headers, body, and auth fields (supports dots/hyphens: {{api.host}}, {{foo-bar}})
 Code samples (dynamic, fully resolved):
   rundocs-code-samples receives pathValues, queryValues, envVars from rundocs-endpoint
   → buildUrl(baseUrl, path, pathValues, queryValues) resolves path params and appends query params
@@ -186,7 +187,7 @@ Two separate systems handle code highlighting, each for different use cases:
 
 Both systems share the same `--sx-syntax-*` CSS variables from `src/styles/theme.ts` for consistent colors across light/dark mode.
 
-**Prism.js + Vite compatibility**: Prism component files (`prism-json.js`, `prism-bash.js`, `prism-python.js`) are IIFEs that expect a global `Prism` object. Vite's ESM module system can't provide this, so the components are imported as raw text via Vite's `?raw` suffix and executed with `new Function('Prism', src)(Prism)`. See `src/utils/prism-highlight.ts`.
+**Prism.js + Vite compatibility**: Prism component files (`prism-json.js`, `prism-bash.js`, `prism-python.js`) are IIFEs that expect a global `Prism` object. Vite's ESM module system can't provide this, so the components are imported as raw text via Vite's `?raw` suffix and executed with `new Function('Prism', src)(Prism)`. See `src/utils/prism-highlight.ts`. **CSP note**: `new Function()` is equivalent to `eval()` and breaks under strict Content Security Policy without `'unsafe-eval'` — documented with a warning comment in the source.
 
 ### Middleware Architecture
 
@@ -280,8 +281,8 @@ rundocs/
 │   │   ├── contexts.ts                       # Lit context definitions
 │   │   ├── spec-store.ts                     # Parsed spec state
 │   │   ├── request-store.ts                  # Per-endpoint request state (dispose() clears listeners for GC)
-│   │   ├── history-store.ts                  # Request history (localStorage, max 100, auth secrets redacted, response body capped at 100 KB before persisting)
-│   │   ├── env-store.ts                      # Environments + variables (localStorage, all variable values redacted before persisting — memory only)
+│   │   ├── history-store.ts                  # Request history (localStorage, max 100, auth secrets redacted, response body capped at 100 KB, IDs via crypto.randomUUID())
+│   │   ├── env-store.ts                      # Environments + variables (localStorage, all variable values redacted before persisting — memory only, IDs via crypto.randomUUID())
 │   │   └── ui-store.ts                       # Theme, sidebar, layout state, history selection
 │   ├── styles/
 │   │   ├── theme.ts                          # Light/dark theme CSS variables
@@ -290,12 +291,12 @@ rundocs/
 │   │   ├── method-colors.ts                  # HTTP method → color mapping
 │   │   └── tailwind-mixin.ts                 # Tailwind utility mixin
 │   ├── utils/
-│   │   ├── http-client.ts                    # Fetch wrapper with auth header injection + API key query param append
+│   │   ├── http-client.ts                    # Fetch wrapper with auth header injection + API key query param append (Content-Type sent even with empty body)
 │   │   ├── url-builder.ts                    # URL construction from parts
-│   │   ├── env-interpolator.ts               # {{variable}} substitution
-│   │   ├── prism-highlight.ts                # Prism.js syntax highlighting (code samples + schema)
+│   │   ├── env-interpolator.ts               # {{variable}} substitution (supports dots/hyphens in names: {{api.host}}, {{foo-bar}})
+│   │   ├── prism-highlight.ts                # Prism.js syntax highlighting (code samples + schema) — CSP warning: uses new Function() (see comment)
 │   │   ├── codemirror-theme.ts               # CodeMirror editor theme (maps --sx-syntax-* vars)
-│   │   ├── local-storage.ts                  # JSON get/set/remove helpers (warns on QuotaExceededError)
+│   │   ├── local-storage.ts                  # JSON get/set/remove helpers (warns on QuotaExceededError, migrateFromSwaggerX() iterates by prefix)
 │   │   └── markdown.ts                       # Markdown → HTML conversion (link URLs sanitized: scheme allowlist + quote escaping)
 │   ├── index.ts                              # Package entry point + CSS import
 │   ├── define.ts                             # Component auto-registration
@@ -383,7 +384,7 @@ npx pnpm dev                    # Start Vite dev server (loads Petstore spec)
 npx pnpm run typecheck          # TypeScript type checking (strict, noUnusedLocals/Params)
 
 # Testing
-npx pnpm test                   # Run all 488 tests once
+npx pnpm test                   # Run all 493 tests once
 npx pnpm run test:watch         # Run tests in watch mode
 npx vitest run test/unit/core/  # Run tests in a specific directory
 npx vitest run -t "parseSpec"   # Run tests matching a name pattern
@@ -408,7 +409,7 @@ npx pnpm run clean              # Delete dist/ folder
 
 ### Overview
 
-- **488 tests** across **59 test files**
+- **493 tests** across **59 test files** (488 base + 5 Phase 6 additions)
 - **Test runner**: Vitest with happy-dom environment
 - **Component testing**: @open-wc/testing for Lit component fixtures
 - **All tests pass** with TypeScript compiling cleanly
@@ -504,6 +505,13 @@ npx pnpm run test:watch                      # Watch mode for development
 | Auth editor labels not connected to inputs | `<label>` and `<input>` not linked via `for`/`id` — screen readers can't associate them | Fixed: added `for`/`id` pairs on all auth fields (bearer token, username, password, API key name/value) |
 | Toggle buttons missing aria-pressed | Pretty/Raw/Word Wrap buttons had no pressed state for screen readers | Fixed: added `aria-pressed` attribute that tracks active state |
 | Error message not announced by screen readers | Error div had no ARIA role — screen readers wouldn't announce spec load failures | Fixed: added `role="alert"` to error div, `aria-busy` to loading container |
+| Content-Type missing on empty POST body | `http-client.ts` skipped Content-Type header when body was empty — mismatched with code-gen | Fixed: send Content-Type on all POST/PUT/PATCH regardless of body content |
+| Env vars with dots/hyphens not interpolated | Regex `\w+` only matches `[a-zA-Z0-9_]` — `{{api.host}}` and `{{foo-bar}}` passed through unchanged | Fixed: broadened to `[\w.-]+` to match dotted and hyphenated variable names |
+| localStorage migration hardcoded key list | Old migration had explicit list of keys — new keys added in future would be silently lost | Fixed: `migrateFromSwaggerX()` iterates all `swaggerx:*` keys by prefix using `localStorage.key(i)` |
+| Sourcemaps shipped in npm package | `dist/*.map` files (4.7 MB) included in published package, bloating install size | Fixed: `"!dist/**/*.map"` exclusion in package.json `files` array |
+| History/env IDs collision risk | `Date.now() + Math.random().toString(36)` IDs could collide under rapid use | Fixed: replaced with `crypto.randomUUID()` for standard UUID v4 generation |
+| `import.meta` CJS build warning | tsup warns about `import.meta.url` when building middleware CJS output | Fixed: `esbuildOptions.logOverride` silences `empty-import-meta` for CJS format in `tsup.config.ts` |
+| Prism.js breaks under strict CSP | `new Function()` in `prism-highlight.ts` is blocked by `script-src` CSP without `'unsafe-eval'` | Known limitation — documented with CSP warning comment; future refactor should use Prism ESM imports |
 
 ## TypeScript Strictness
 
@@ -514,7 +522,7 @@ npx pnpm run test:watch                      # Watch mode for development
 | File | Purpose |
 |---|---|
 | `vite.config.ts` | Frontend build — library mode (ES + UMD), Tailwind plugin, node polyfills, dev server host |
-| `tsup.config.ts` | Middleware build — Express + Fastify entry points, CJS + ESM, type declarations |
+| `tsup.config.ts` | Middleware build — Express + Fastify entry points, CJS + ESM, type declarations, silences import.meta CJS warning |
 | `tsconfig.json` | TypeScript — strict mode, ES2021 target, bundler resolution, declaration files |
 | `vitest.config.ts` | Test runner — happy-dom environment, coverage via v8, path aliases |
 | `tailwind.config.ts` | Tailwind — dark mode (class-based), HTTP method colors, custom fonts, `--sx-*` variables |

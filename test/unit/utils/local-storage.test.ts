@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getItem, setItem, removeItem } from '../../../src/utils/local-storage.js';
+import { getItem, setItem, removeItem, migrateFromSwaggerX } from '../../../src/utils/local-storage.js';
 
 function createMockStorage(): Storage {
   let store: Record<string, string> = {};
@@ -63,6 +63,39 @@ describe('local-storage', () => {
     it('returns fallback if stored value is invalid JSON', () => {
       localStorage.setItem('rundocs:bad', 'not-json{');
       expect(getItem('bad', 'fallback')).toBe('fallback');
+    });
+  });
+
+  describe('migrateFromSwaggerX', () => {
+    it('migrates swaggerx: keys to rundocs: prefix', () => {
+      localStorage.setItem('swaggerx:history', '["entry1"]');
+      localStorage.setItem('swaggerx:environments', '["env1"]');
+      migrateFromSwaggerX();
+      expect(localStorage.getItem('rundocs:history')).toBe('["entry1"]');
+      expect(localStorage.getItem('rundocs:environments')).toBe('["env1"]');
+      expect(localStorage.getItem('swaggerx:history')).toBeNull();
+      expect(localStorage.getItem('swaggerx:environments')).toBeNull();
+    });
+
+    it('does not overwrite existing rundocs: keys', () => {
+      localStorage.setItem('swaggerx:history', '["old"]');
+      localStorage.setItem('rundocs:history', '["new"]');
+      migrateFromSwaggerX();
+      expect(localStorage.getItem('rundocs:history')).toBe('["new"]');
+      expect(localStorage.getItem('swaggerx:history')).toBeNull();
+    });
+
+    it('migrates keys not in any hardcoded list', () => {
+      localStorage.setItem('swaggerx:custom-setting', '"value"');
+      migrateFromSwaggerX();
+      expect(localStorage.getItem('rundocs:custom-setting')).toBe('"value"');
+      expect(localStorage.getItem('swaggerx:custom-setting')).toBeNull();
+    });
+
+    it('ignores non-swaggerx keys', () => {
+      localStorage.setItem('other:key', 'data');
+      migrateFromSwaggerX();
+      expect(localStorage.getItem('other:key')).toBe('data');
     });
   });
 });

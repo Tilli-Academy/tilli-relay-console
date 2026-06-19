@@ -56,7 +56,7 @@ export class EnvStore {
 
   addEnvironment(name: string, variables: Record<string, string> = {}): Environment {
     const env: Environment = {
-      id: `env-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: crypto.randomUUID(),
       name,
       variables,
     };

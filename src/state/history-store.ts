@@ -49,7 +49,7 @@ export class HistoryStore {
     response: ResponseState;
   }): void {
     const historyEntry: HistoryEntry = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: crypto.randomUUID(),
       timestamp: Date.now(),
       endpointId: entry.endpointId,
       method: entry.method,

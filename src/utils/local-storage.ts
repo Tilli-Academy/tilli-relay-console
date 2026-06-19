@@ -5,19 +5,35 @@
 const PREFIX = 'rundocs:';
 const OLD_PREFIX = 'swaggerx:';
 
-// One-time migration: copy swaggerx:* keys to rundocs:* keys
-try {
-  const keys = ['history', 'environments', 'active-env', 'ui-state'];
-  for (const key of keys) {
-    const oldVal = localStorage.getItem(`${OLD_PREFIX}${key}`);
-    if (oldVal !== null && localStorage.getItem(`${PREFIX}${key}`) === null) {
-      localStorage.setItem(`${PREFIX}${key}`, oldVal);
-      localStorage.removeItem(`${OLD_PREFIX}${key}`);
+/**
+ * One-time migration: copy all swaggerx:* keys to rundocs:* keys.
+ * Iterates by prefix so new keys are automatically picked up.
+ * Call once at app bootstrap.
+ */
+export function migrateFromSwaggerX(): void {
+  try {
+    // Collect keys first to avoid index shifting during removal
+    const keysToMigrate: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(OLD_PREFIX)) {
+        keysToMigrate.push(key);
+      }
     }
+    for (const key of keysToMigrate) {
+      const newKey = PREFIX + key.slice(OLD_PREFIX.length);
+      if (localStorage.getItem(newKey) === null) {
+        localStorage.setItem(newKey, localStorage.getItem(key)!);
+      }
+      localStorage.removeItem(key);
+    }
+  } catch {
+    // localStorage might be disabled — silently ignore
   }
-} catch {
-  // localStorage might be disabled — silently ignore
 }
+
+// Run migration on module load for backwards compatibility
+migrateFromSwaggerX();
 
 export function getItem<T>(key: string, fallback: T): T {
   try {

@@ -22,7 +22,12 @@ import bashSrc from 'prismjs/components/prism-bash.js?raw';
 // @ts-ignore
 import pythonSrc from 'prismjs/components/prism-python.js?raw';
 
-// Execute each component file with Prism in scope
+// Execute each component file with Prism in scope.
+// NOTE: `new Function()` is equivalent to eval() and will break under a
+// strict Content Security Policy (CSP) that disallows 'unsafe-eval'.
+// This is necessary because Prism grammar files are IIFEs that require a
+// global `Prism` object, which Vite's ESM module system cannot provide.
+// A future refactor should replace this with Prism's ESM-compatible imports.
 [jsonSrc, bashSrc, pythonSrc].forEach((src: string) => {
   new Function('Prism', src)(Prism);
 });

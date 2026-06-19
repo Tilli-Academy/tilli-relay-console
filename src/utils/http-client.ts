@@ -19,9 +19,9 @@ export async function sendRequest(options: SendRequestOptions): Promise<Response
   // Build final headers
   const finalHeaders: Record<string, string> = { ...headers };
 
-  // Apply content-type for methods that have a body
+  // Apply content-type for methods that have a body (matches code-gen behavior)
   const hasBody = ['post', 'put', 'patch'].includes(method.toLowerCase());
-  if (hasBody && contentType && body) {
+  if (hasBody && contentType) {
     finalHeaders['Content-Type'] = contentType;
   }
 

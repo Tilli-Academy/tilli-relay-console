@@ -20,4 +20,14 @@ export default defineConfig({
   ],
   outDir: 'dist',
   clean: false,
+  // Silence "import.meta is not available with cjs" warning.
+  // The CJS path uses __dirname; import.meta.url is only reached in ESM.
+  esbuildOptions(options, context) {
+    if (context.format === 'cjs') {
+      options.logOverride = {
+        ...options.logOverride,
+        'empty-import-meta': 'silent',
+      };
+    }
+  },
 });

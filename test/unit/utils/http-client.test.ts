@@ -94,7 +94,7 @@ describe('sendRequest', () => {
     expect(init.headers['Content-Type']).toBe('application/json');
   });
 
-  it('does NOT send Content-Type if body is empty', async () => {
+  it('sends Content-Type for POST even when body is empty', async () => {
     mockFetch.mockResolvedValue(mockResponse(''));
     await sendRequest(
       defaultOptions({
@@ -105,7 +105,7 @@ describe('sendRequest', () => {
     );
 
     const [, init] = mockFetch.mock.calls[0];
-    expect(init.headers['Content-Type']).toBeUndefined();
+    expect(init.headers['Content-Type']).toBe('application/json');
   });
 
   it('returns ResponseState with status, statusText, headers, body, time, size', async () => {
