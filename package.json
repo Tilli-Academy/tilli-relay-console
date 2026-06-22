@@ -57,7 +57,7 @@
     "lit",
     "api-explorer"
   ],
-  "author": "Akthar S",
+  "author": "SyedAktharAhmed <akthars@tilli.pro>",
   "license": "MIT",
   "packageManager": "pnpm@10.33.4",
   "engines": {

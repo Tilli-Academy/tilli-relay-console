@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getItem, setItem, removeItem, migrateFromSwaggerX } from '../../../src/utils/local-storage.js';
+import { generateId, getItem, setItem, removeItem, migrateFromSwaggerX } from '../../../src/utils/local-storage.js';
 
 function createMockStorage(): Storage {
   let store: Record<string, string> = {};
@@ -96,6 +96,27 @@ describe('local-storage', () => {
       localStorage.setItem('other:key', 'data');
       migrateFromSwaggerX();
       expect(localStorage.getItem('other:key')).toBe('data');
+    });
+  });
+
+  describe('generateId', () => {
+    it('uses crypto.randomUUID when available', () => {
+      vi.stubGlobal('crypto', { randomUUID: () => '550e8400-e29b-41d4-a716-446655440000' });
+      expect(generateId()).toBe('550e8400-e29b-41d4-a716-446655440000');
+    });
+
+    it('falls back when crypto.randomUUID is unavailable', () => {
+      vi.stubGlobal('crypto', {});
+      const id = generateId();
+      expect(typeof id).toBe('string');
+      expect(id.length).toBeGreaterThan(0);
+      expect(id).toContain('-');
+    });
+
+    it('generates unique IDs in fallback mode', () => {
+      vi.stubGlobal('crypto', {});
+      const ids = new Set(Array.from({ length: 50 }, () => generateId()));
+      expect(ids.size).toBe(50);
     });
   });
 });

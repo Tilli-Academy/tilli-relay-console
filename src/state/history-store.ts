@@ -1,5 +1,5 @@
 import type { AuthConfig, HistoryEntry, HttpMethod, ResponseState } from '../core/types.js';
-import { getItem, setItem } from '../utils/local-storage.js';
+import { generateId, getItem, setItem } from '../utils/local-storage.js';
 
 const STORAGE_KEY = 'history';
 const MAX_ENTRIES = 100;
@@ -49,7 +49,7 @@ export class HistoryStore {
     response: ResponseState;
   }): void {
     const historyEntry: HistoryEntry = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       timestamp: Date.now(),
       endpointId: entry.endpointId,
       method: entry.method,

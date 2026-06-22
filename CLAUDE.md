@@ -80,12 +80,12 @@ RunDocs is an OpenAPI 3.x documentation UI with Postman-like UX, built as an ins
 |---|---|
 | Source code (42 components) | Done |
 | Dual build system (Vite + tsup) | Done |
-| Unit tests (521 tests, 59 files) | Done |
+| Unit tests (524 tests, 59 files) | Done |
 | Accessibility audit + fixes | Done |
 | TypeScript strict mode | Done |
 | Dev server (Vite) | Done |
 | CLAUDE.md | Done |
-| README.md | Not created |
+| README.md | Done |
 | Docker setup | Not created |
 | CI/CD pipeline | Not created |
 | npm publish workflow | Not created |
@@ -281,8 +281,8 @@ rundocs/
 │   │   ├── contexts.ts                       # Lit context definitions
 │   │   ├── spec-store.ts                     # Parsed spec state
 │   │   ├── request-store.ts                  # Per-endpoint request state (dispose() clears listeners for GC)
-│   │   ├── history-store.ts                  # Request history (localStorage, max 100, auth secrets redacted, response body capped at 100 KB, IDs via crypto.randomUUID())
-│   │   ├── env-store.ts                      # Environments + variables (localStorage, all variable values redacted before persisting — memory only, IDs via crypto.randomUUID())
+│   │   ├── history-store.ts                  # Request history (localStorage, max 100, auth secrets redacted, response body capped at 100 KB, IDs via generateId() — crypto.randomUUID() with fallback for non-secure contexts)
+│   │   ├── env-store.ts                      # Environments + variables (localStorage, all variable values redacted before persisting — memory only, IDs via generateId() — crypto.randomUUID() with fallback for non-secure contexts)
 │   │   └── ui-store.ts                       # Theme, sidebar, layout state, history selection
 │   ├── styles/
 │   │   ├── theme.ts                          # Light/dark theme CSS variables
@@ -296,7 +296,7 @@ rundocs/
 │   │   ├── env-interpolator.ts               # {{variable}} substitution (supports dots/hyphens in names: {{api.host}}, {{foo-bar}})
 │   │   ├── prism-highlight.ts                # Prism.js syntax highlighting (code samples + schema) — CSP warning: uses new Function() (see comment)
 │   │   ├── codemirror-theme.ts               # CodeMirror editor theme (maps --sx-syntax-* vars)
-│   │   ├── local-storage.ts                  # JSON get/set/remove helpers (warns on QuotaExceededError, migrateFromSwaggerX() iterates by prefix)
+│   │   ├── local-storage.ts                  # JSON get/set/remove helpers, generateId() (crypto.randomUUID with non-secure fallback), warns on QuotaExceededError, migrateFromSwaggerX() iterates by prefix
 │   │   └── markdown.ts                       # Markdown → HTML conversion (link URLs sanitized: scheme allowlist + quote escaping)
 │   ├── index.ts                              # Package entry point + CSS import
 │   ├── define.ts                             # Component auto-registration
@@ -384,7 +384,7 @@ npx pnpm dev                    # Start Vite dev server (loads Petstore spec)
 npx pnpm run typecheck          # TypeScript type checking (strict, noUnusedLocals/Params)
 
 # Testing
-npx pnpm test                   # Run all 521 tests once
+npx pnpm test                   # Run all 524 tests once
 npx pnpm run test:watch         # Run tests in watch mode
 npx vitest run test/unit/core/  # Run tests in a specific directory
 npx vitest run -t "parseSpec"   # Run tests matching a name pattern
@@ -409,7 +409,7 @@ npx pnpm run clean              # Delete dist/ folder
 
 ### Overview
 
-- **521 tests** across **59 test files** (488 base + 5 Phase 6 additions + 28 Minor Issue 1 additions)
+- **524 tests** across **59 test files** (488 base + 5 Phase 6 additions + 28 Minor Issue 1 additions + 3 generateId additions)
 - **Test runner**: Vitest with happy-dom environment
 - **Component testing**: @open-wc/testing for Lit component fixtures
 - **All tests pass** with TypeScript compiling cleanly
@@ -509,7 +509,7 @@ npx pnpm run test:watch                      # Watch mode for development
 | Env vars with dots/hyphens not interpolated | Regex `\w+` only matches `[a-zA-Z0-9_]` — `{{api.host}}` and `{{foo-bar}}` passed through unchanged | Fixed: broadened to `[\w.-]+` to match dotted and hyphenated variable names |
 | localStorage migration hardcoded key list | Old migration had explicit list of keys — new keys added in future would be silently lost | Fixed: `migrateFromSwaggerX()` iterates all `swaggerx:*` keys by prefix using `localStorage.key(i)` |
 | Sourcemaps shipped in npm package | `dist/*.map` files (4.7 MB) included in published package, bloating install size | Fixed: `"!dist/**/*.map"` exclusion in package.json `files` array |
-| History/env IDs collision risk | `Date.now() + Math.random().toString(36)` IDs could collide under rapid use | Fixed: replaced with `crypto.randomUUID()` for standard UUID v4 generation |
+| History/env IDs collision risk | `Date.now() + Math.random().toString(36)` IDs could collide under rapid use | Fixed: replaced with `generateId()` — uses `crypto.randomUUID()` in secure contexts (HTTPS/localhost), falls back to timestamp+random for non-secure contexts (HTTP on LAN IP) |
 | `import.meta` CJS build warning | tsup warns about `import.meta.url` when building middleware CJS output | Fixed: `esbuildOptions.logOverride` silences `empty-import-meta` for CJS format in `tsup.config.ts` |
 | Prism.js breaks under strict CSP | `new Function()` in `prism-highlight.ts` is blocked by `script-src` CSP without `'unsafe-eval'` | Known limitation — documented with CSP warning comment; future refactor should use Prism ESM imports |
 | Duplicate path+operation params | Path-level and operation-level params with same `name+in` both appeared | Fixed: `deduplicateParams()` uses Map keyed by `in:name`, operation-level overwrites path-level |

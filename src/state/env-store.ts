@@ -1,5 +1,5 @@
 import type { Environment } from '../core/types.js';
-import { getItem, setItem } from '../utils/local-storage.js';
+import { generateId, getItem, setItem } from '../utils/local-storage.js';
 
 const ENVS_KEY = 'environments';
 const ACTIVE_KEY = 'active-env';
@@ -56,7 +56,7 @@ export class EnvStore {
 
   addEnvironment(name: string, variables: Record<string, string> = {}): Environment {
     const env: Environment = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       name,
       variables,
     };

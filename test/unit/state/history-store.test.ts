@@ -13,6 +13,7 @@ vi.mock('../../../src/utils/local-storage.js', () => ({
   removeItem: (key: string) => {
     delete storage[`rundocs:${key}`];
   },
+  generateId: () => crypto.randomUUID(),
 }));
 
 import { HistoryStore } from '../../../src/state/history-store.js';

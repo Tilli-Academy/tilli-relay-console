@@ -63,3 +63,17 @@ export function removeItem(key: string): void {
     // Silently ignore
   }
 }
+
+/**
+ * Generate a unique ID. Uses `crypto.randomUUID()` in secure contexts (HTTPS
+ * or localhost). Falls back to a timestamp + random string for plain HTTP on
+ * non-localhost origins where `crypto.randomUUID` is unavailable.
+ */
+export function generateId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  const ts = Date.now().toString(36);
+  const rand = Math.random().toString(36).slice(2, 10);
+  return `${ts}-${rand}-${Math.random().toString(36).slice(2, 10)}`;
+}

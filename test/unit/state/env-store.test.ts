@@ -13,6 +13,7 @@ vi.mock('../../../src/utils/local-storage.js', () => ({
   removeItem: (key: string) => {
     delete storage[`rundocs:${key}`];
   },
+  generateId: () => crypto.randomUUID(),
 }));
 
 import { EnvStore } from '../../../src/state/env-store.js';
