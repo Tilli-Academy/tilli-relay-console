@@ -19,9 +19,7 @@ export interface RunDocsOptions {
 export function getDistDir(): string {
   // Works for both CJS (__dirname) and ESM (import.meta.url)
   const dir =
-    typeof __dirname !== 'undefined'
-      ? __dirname
-      : dirname(fileURLToPath(import.meta.url));
+    typeof __dirname !== 'undefined' ? __dirname : dirname(fileURLToPath(import.meta.url));
 
   // When built with tsup the middleware lives at dist/middleware/
   // so the frontend assets are one level up in dist/
@@ -34,26 +32,14 @@ export function getDistDir(): string {
 
 /**
  * Generates the full HTML page that bootstraps RunDocs.
+ * CSP-safe: no inline scripts — all JS loaded from external files.
  */
 export function renderHTML(opts: RunDocsOptions = {}): string {
   const title = opts.title ?? 'RunDocs — API Documentation';
 
-  let specAttr = '';
-  if (opts.specUrl) {
-    specAttr = ` spec-url="${escapeAttr(opts.specUrl)}"`;
-  }
-
-  let specScript = '';
-  if (opts.spec) {
-    specScript = `
-    <script>
-      window.__RUNDOCS_SPEC__ = ${JSON.stringify(opts.spec).replace(/</g, '\\u003c')};
-      customElements.whenDefined('rundocs-app').then(() => {
-        const app = document.querySelector('rundocs-app');
-        if (app) app.spec = window.__RUNDOCS_SPEC__;
-      });
-    </script>`;
-  }
+  // Determine the spec source: inline spec served at ./spec.json, or user-provided URL
+  const specUrl = opts.spec ? './spec.json' : (opts.specUrl ?? '');
+  const specAttr = specUrl ? ` spec-url="${escapeAttr(specUrl)}"` : '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -69,10 +55,8 @@ export function renderHTML(opts: RunDocsOptions = {}): string {
 </head>
 <body>
   <rundocs-app${specAttr}></rundocs-app>
-  <script type="module">
-    import { defineRunDocs } from './rundocs.es.js';
-    defineRunDocs();
-  </script>${specScript}
+  <script src="./rundocs.js"></script>
+  <script src="./rundocs-init.js"></script>
 </body>
 </html>`;
 }

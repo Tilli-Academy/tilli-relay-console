@@ -19,7 +19,7 @@ RunDocs is an OpenAPI 3.x documentation UI with Postman-like UX, built as an ins
 - **Dark Mode** — Light/dark theme toggle, persisted to localStorage
 - **Fuzzy Search** — Filter endpoints instantly via fuse.js
 - **Resizable Split Pane** — Draggable sidebar/main divider, ratio persisted
-- **Server Middleware** — Express middleware and Fastify plugin for mounting RunDocs in Node.js apps, supports both `specUrl` and inline `spec` options, proxy-safe with relative asset paths and trailing slash redirect
+- **Server Middleware** — Express middleware and Fastify plugin for mounting RunDocs in Node.js apps, supports both `specUrl` and inline `spec` options, proxy-safe with relative asset paths and trailing slash redirect. CSP-safe: no inline scripts, works with strict `script-src 'self'` policies (Helmet). CORS-safe: uses UMD bundle via regular `<script>` tag instead of ES modules
 - **Accessibility** — Form labels connected via `for`/`id`, `aria-pressed` on toggle buttons, `role="alert"` on error states, `aria-busy` on loading, `aria-label` on selects/inputs, `.sr-only` utility class in baseStyles, keyboard navigation, semantic HTML, focus management
 
 ## Technology Stack
@@ -39,7 +39,7 @@ RunDocs is an OpenAPI 3.x documentation UI with Postman-like UX, built as an ins
 ### Spec Parsing
 | Technology | Version | Purpose |
 |---|---|---|
-| @apidevtools/swagger-parser | 12.1.0 | OpenAPI parsing, validation, dereferencing |
+| @apidevtools/swagger-parser | 12.1.0 | OpenAPI parsing, dereferencing (uses dereference() instead of validate() — CSP-safe, no eval) |
 | js-yaml | 4.1.1 | YAML spec parsing |
 
 ### Build Tools
@@ -80,7 +80,7 @@ RunDocs is an OpenAPI 3.x documentation UI with Postman-like UX, built as an ins
 |---|---|
 | Source code (42 components) | Done |
 | Dual build system (Vite + tsup) | Done |
-| Unit tests (524 tests, 59 files) | Done |
+| Unit tests (523 tests, 59 files) | Done |
 | Accessibility audit + fixes | Done |
 | TypeScript strict mode | Done |
 | Dev server (Vite) | Done |
@@ -187,17 +187,18 @@ Two separate systems handle code highlighting, each for different use cases:
 
 Both systems share the same `--sx-syntax-*` CSS variables from `src/styles/theme.ts` for consistent colors across light/dark mode.
 
-**Prism.js + Vite compatibility**: Prism component files (`prism-json.js`, `prism-bash.js`, `prism-python.js`) are IIFEs that expect a global `Prism` object. Vite's ESM module system can't provide this, so the components are imported as raw text via Vite's `?raw` suffix and executed with `new Function('Prism', src)(Prism)`. See `src/utils/prism-highlight.ts`. **CSP note**: `new Function()` is equivalent to `eval()` and breaks under strict Content Security Policy without `'unsafe-eval'` — documented with a warning comment in the source.
+**Prism.js loading**: Prism component files (`prism-json.js`, `prism-bash.js`, `prism-python.js`) are IIFEs that expect a global `Prism` object. They are imported as standard ES side-effect modules (`import 'prismjs/components/prism-json.js'`). The main `prismjs` module sets `window.Prism` during initialization, so the component IIFEs find it via the global scope. This approach is CSP-safe (no `eval()` or `new Function()`). Safety checks (`if (Prism.languages.bash)`) guard against grammars not loading, with graceful fallback to unhighlighted text.
 
 ### Middleware Architecture
 
 The Express and Fastify middleware serve RunDocs as a self-contained UI at a mount path (e.g., `/docs`). Key design decisions:
 
-- **Relative asset paths** — HTML references CSS/JS as `./rundocs.css` and `./rundocs.es.js` (not absolute paths like `/docs/rundocs.css`). This ensures the UI works correctly behind reverse proxies and remote dev environments where the server may be accessed via a different host/path.
+- **CSP-safe (no inline scripts)** — The HTML template contains zero inline `<script>` tags. All JavaScript is loaded from external files: `<script src="./rundocs.js">` (UMD bundle) and `<script src="./rundocs-init.js">` (init script). This works with strict Content Security Policy (`script-src 'self'`) used by security middleware like Helmet.
+- **Relative asset paths** — HTML references CSS/JS as `./rundocs.css` and `./rundocs.js` (not absolute paths like `/docs/rundocs.css`). This ensures the UI works correctly behind reverse proxies and remote dev environments where the server may be accessed via a different host/path.
 - **Trailing slash redirect** — Requests to `/docs` are redirected (301) to `/docs/`. Without the trailing slash, the browser resolves relative paths against the wrong directory (e.g., `./rundocs.css` becomes `/rundocs.css` instead of `/docs/rundocs.css`).
-- **`defineRunDocs()` in HTML** — The HTML template includes an inline ES module that imports and calls `defineRunDocs()` to register all 42 custom elements. Without this, only `<rundocs-app>` would be registered and child components would render as empty tags.
-- **`customElements.whenDefined()`** — The inline spec is set on the `<rundocs-app>` element only after `customElements.whenDefined('rundocs-app')` resolves. This ensures the Lit component class is registered and the `spec` property setter triggers reactivity correctly.
-- **Inline spec support** — The middleware accepts a `spec` option (parsed OpenAPI object) which is embedded as `window.__RUNDOCS_SPEC__` in the HTML. This avoids a separate browser request for the spec file, which can fail behind proxies. The `specUrl` option is also supported for fetching specs via URL.
+- **UMD bundle for CORS safety** — The HTML loads `rundocs.js` (UMD, self-contained) via a regular `<script>` tag instead of `rundocs.es.js` (ES module, code-split). Regular scripts don't trigger CORS preflight checks, so RunDocs works behind reverse proxies where the Origin header doesn't match the server's CORS allowlist.
+- **`defineRunDocs()` via external init script** — The middleware serves `/rundocs-init.js` as an endpoint that returns `RunDocs.defineRunDocs();`. This registers all 42 custom elements. The UMD bundle makes `RunDocs` available as a global before the init script runs.
+- **Inline spec via `/spec.json` endpoint** — When the middleware receives a `spec` option (parsed OpenAPI object), it serves it as JSON at `/spec.json` and sets `spec-url="./spec.json"` on the `<rundocs-app>` element. The spec is never embedded inline in HTML (avoids `</script>` injection and CSP issues). The `specUrl` option is also supported for fetching specs via URL.
 
 ### Key Conventions
 
@@ -269,14 +270,14 @@ rundocs/
 │   │       └── rundocs-key-value-editor.ts  # Reusable key-value pair editor (emit-only, parent owns data)
 │   ├── core/
 │   │   ├── types.ts                          # TypeScript interfaces (ServerVariable, ResolvedSchema.type supports string | string[] for OAS 3.1)
-│   │   ├── parser.ts                         # OpenAPI spec fetching and parsing (accepts string or object, rejects Swagger 2.0 with conversion link)
+│   │   ├── parser.ts                         # OpenAPI spec fetching and parsing (accepts string or object, rejects Swagger 2.0 with conversion link, uses dereference() not validate() for CSP safety)
 │   │   ├── normalizer.ts                     # Raw spec → RunDocsSpec transformation (param dedup by name+in, global security fallback, tag ordering from doc.tags, server variable substitution)
 │   │   ├── schema-resolver.ts                # $ref dereferencing + example generation (OAS 3.1 array type, nullable labels, improved allOf flattening)
 │   │   └── code-gen.ts                       # Dynamic code sample generation (4 languages, auth/headers/body from request builder, POST/PUT/PATCH always include -d, window.location.origin fallback, spec example fallback via getExampleBody, per-language escaping, content-type detection from spec)
 │   ├── middleware/
-│   │   ├── express.ts                        # Express router middleware (trailing slash redirect)
-│   │   ├── fastify.ts                        # Fastify plugin (trailing slash redirect)
-│   │   └── common.ts                         # Shared HTML renderer (relative paths, defineRunDocs, inline spec, < escaped as \u003c in JSON to prevent script injection, getDistDir detects src/ vs dist/ for correct asset path)
+│   │   ├── express.ts                        # Express router middleware (trailing slash redirect, /rundocs-init.js endpoint, /spec.json endpoint)
+│   │   ├── fastify.ts                        # Fastify plugin (trailing slash redirect, /rundocs-init.js endpoint, /spec.json endpoint)
+│   │   └── common.ts                         # Shared HTML renderer (CSP-safe: no inline scripts, loads UMD bundle + init script from external files, serves inline spec via spec-url attribute, getDistDir detects src/ vs dist/ for correct asset path)
 │   ├── state/
 │   │   ├── contexts.ts                       # Lit context definitions
 │   │   ├── spec-store.ts                     # Parsed spec state
@@ -294,7 +295,7 @@ rundocs/
 │   │   ├── http-client.ts                    # Fetch wrapper with auth header injection + API key query param append (Content-Type sent even with empty body)
 │   │   ├── url-builder.ts                    # URL construction from parts
 │   │   ├── env-interpolator.ts               # {{variable}} substitution (supports dots/hyphens in names: {{api.host}}, {{foo-bar}})
-│   │   ├── prism-highlight.ts                # Prism.js syntax highlighting (code samples + schema) — CSP warning: uses new Function() (see comment)
+│   │   ├── prism-highlight.ts                # Prism.js syntax highlighting (code samples + schema) — CSP-safe: uses ESM side-effect imports instead of new Function()
 │   │   ├── codemirror-theme.ts               # CodeMirror editor theme (maps --sx-syntax-* vars)
 │   │   ├── local-storage.ts                  # JSON get/set/remove helpers, generateId() (crypto.randomUUID with non-secure fallback), warns on QuotaExceededError, migrateFromSwaggerX() iterates by prefix
 │   │   └── markdown.ts                       # Markdown → HTML conversion (link URLs sanitized: scheme allowlist + quote escaping)
@@ -335,7 +336,7 @@ rundocs/
 ├── vitest.config.ts                          # Vitest test runner config
 ├── tailwind.config.ts                        # Tailwind CSS theme + colors
 ├── postcss.config.js                         # PostCSS with autoprefixer
-├── .eslintrc.cjs                             # ESLint rules
+├── eslint.config.js                          # ESLint flat config
 ├── .prettierrc                               # Prettier formatting rules
 ├── .gitignore                                # Git ignore patterns
 ├── package.json                              # Project manifest + scripts
@@ -384,7 +385,7 @@ npx pnpm dev                    # Start Vite dev server (loads Petstore spec)
 npx pnpm run typecheck          # TypeScript type checking (strict, noUnusedLocals/Params)
 
 # Testing
-npx pnpm test                   # Run all 524 tests once
+npx pnpm test                   # Run all 523 tests once
 npx pnpm run test:watch         # Run tests in watch mode
 npx vitest run test/unit/core/  # Run tests in a specific directory
 npx vitest run -t "parseSpec"   # Run tests matching a name pattern
@@ -409,7 +410,7 @@ npx pnpm run clean              # Delete dist/ folder
 
 ### Overview
 
-- **524 tests** across **59 test files** (488 base + 5 Phase 6 additions + 28 Minor Issue 1 additions + 3 generateId additions)
+- **523 tests** across **59 test files** (488 base + 5 Phase 6 additions + 28 Minor Issue 1 additions + 3 generateId additions - 1 removed during CSP refactor)
 - **Test runner**: Vitest with happy-dom environment
 - **Component testing**: @open-wc/testing for Lit component fixtures
 - **All tests pass** with TypeScript compiling cleanly
@@ -464,7 +465,7 @@ npx pnpm run test:watch                      # Watch mode for development
 | PostCSS/Tailwind conflict | Both `@tailwindcss/vite` and `tailwindcss` in postcss.config.js | Only `autoprefixer` should be in postcss.config.js |
 | Vite can't resolve express/fastify | Framework packages imported at top level | Middleware uses `require()` at runtime, not ES `import` |
 | "Lit is in dev mode" warning | Development build | Normal in dev; goes away in production build |
-| "The language 'bash' has no grammar" | Prism.js components need global `Prism`, Vite ESM can't provide it | Use `?raw` imports + `new Function('Prism', src)(Prism)` — see `prism-highlight.ts` |
+| "The language 'bash' has no grammar" | Prism.js component IIFEs need global `Prism` | Components imported as ES side-effect modules; `prismjs` sets `window.Prism` during init so IIFEs find it — see `prism-highlight.ts` |
 | Blank page when served via middleware behind proxy | Absolute asset paths lose proxy prefix | Middleware uses relative paths (`./rundocs.css`) — already fixed |
 | CSS/JS 404 when accessing `/docs` (no trailing slash) | Browser resolves `./rundocs.css` against wrong directory | Middleware redirects `/docs` → `/docs/` (301) — already fixed |
 | "No API Specification" with inline spec | `spec` property set before custom element is defined | Middleware uses `customElements.whenDefined()` before setting `spec` — already fixed |
@@ -481,7 +482,7 @@ npx pnpm run test:watch                      # Watch mode for development
 | Code samples show spec example when body editor is empty | `code-gen.ts` fell back to `getExampleBody()` when `userBody` was empty | Fixed: POST/PUT/PATCH methods use `userBody` when non-empty, fall back to `getExampleBody()` for spec example, then empty string. Body editor pre-filled with `{}` for endpoints with `requestBody`. User input escaped per language; content-type detected from spec. |
 | Code samples missing `-d` for POST without `requestBody` | Body logic checked `endpoint.requestBody` instead of HTTP method | Fixed: changed to check `['post', 'put', 'patch'].includes(endpoint.method)` — all POST methods get `-d` in curl |
 | Stored XSS via markdown link URLs | `markdown.ts` link regex dropped URLs into `href` with no scheme check or quote escaping — `javascript:` and `"` attribute breakout worked | Fixed: `sanitizeUrl()` allowlists `http/https/mailto/#/` schemes, escapes `"` as `&quot;` in href values |
-| `</script>` injection in middleware HTML | `JSON.stringify(opts.spec)` didn't escape `</script>` sequences in inline spec | Fixed: escape `<` as `\u003c` after JSON.stringify — browser can't see premature `</script>`, JS still decodes correctly |
+| `</script>` injection in middleware HTML | `JSON.stringify(opts.spec)` didn't escape `</script>` sequences in inline spec | Fixed: spec is no longer embedded inline in HTML — served via separate `/spec.json` endpoint, eliminating the injection vector entirely (previously used `\u003c` escaping) |
 | Auth secrets persisted in plaintext localStorage | `history-store.ts` saved full `AuthConfig` (tokens, passwords, API keys) and `Authorization` header in history entries | Fixed: `redactEntry()` strips `token`, `password`, `apiKeyValue`, `username` from auth and removes `Authorization`/`Cookie` headers before persisting. In-memory entries keep full data for current session. |
 | No visual feedback on repeat Send click | Response area updated silently — user couldn't tell it changed | Fixed: loading overlay with spinner on response area while request is in flight (`rundocs-response.ts`) |
 | No visual feedback when switching endpoints | Content changed instantly with no transition | Fixed: 200ms fade-in animation via Web Animations API in `rundocs-endpoint.ts` `updated()` lifecycle |
@@ -511,7 +512,7 @@ npx pnpm run test:watch                      # Watch mode for development
 | Sourcemaps shipped in npm package | `dist/*.map` files (4.7 MB) included in published package, bloating install size | Fixed: `"!dist/**/*.map"` exclusion in package.json `files` array |
 | History/env IDs collision risk | `Date.now() + Math.random().toString(36)` IDs could collide under rapid use | Fixed: replaced with `generateId()` — uses `crypto.randomUUID()` in secure contexts (HTTPS/localhost), falls back to timestamp+random for non-secure contexts (HTTP on LAN IP) |
 | `import.meta` CJS build warning | tsup warns about `import.meta.url` when building middleware CJS output | Fixed: `esbuildOptions.logOverride` silences `empty-import-meta` for CJS format in `tsup.config.ts` |
-| Prism.js breaks under strict CSP | `new Function()` in `prism-highlight.ts` is blocked by `script-src` CSP without `'unsafe-eval'` | Known limitation — documented with CSP warning comment; future refactor should use Prism ESM imports |
+| Prism.js breaks under strict CSP | `new Function()` in `prism-highlight.ts` was blocked by `script-src` CSP without `'unsafe-eval'` | Fixed: replaced `?raw` imports + `new Function()` with standard ES side-effect imports (`import 'prismjs/components/prism-json.js'`). Safety checks guard `insertBefore` calls and highlight functions with graceful fallback |
 | Duplicate path+operation params | Path-level and operation-level params with same `name+in` both appeared | Fixed: `deduplicateParams()` uses Map keyed by `in:name`, operation-level overwrites path-level |
 | Global security ignored | Operations without `security` got empty array instead of `doc.security` fallback | Fixed: `undefined` falls back to `doc.security`; explicit `[]` means no security |
 | Tags in wrong order | Tags ordered by first endpoint appearance, not `doc.tags` array | Fixed: `groupByTags()` sorts by `doc.tags` index, unknown tags sort to end |
@@ -519,6 +520,10 @@ npx pnpm run test:watch                      # Watch mode for development
 | `getSchemaTypeLabel` missing nullable | `{ type: 'string', nullable: true }` returned `"string"` instead of `"string \| null"` | Fixed: `normalizeType()` checks `nullable` flag and OAS 3.1 array type, appends ` \| null` |
 | OAS 3.1 `type: ["string", "null"]` not handled | swagger-parser passes array types through as-is, code assumed `type` is always a string | Fixed: `normalizeType()` extracts non-null type from array, sets nullable flag |
 | `flattenSchema` loses fields from allOf | Only merged `properties`, `required`, `description` — lost `type`, `format`, `nullable`, constraints | Fixed: merges all scalar fields (type, format, enum, nullable, constraints, title, additionalProperties), parent schema fields take precedence |
+| Spec parsing fails under strict CSP (Helmet) | `SwaggerParser.validate()` uses `ajv` which compiles schemas via `new Function()` — blocked by `script-src 'self'` | Fixed: changed to `SwaggerParser.dereference()` which resolves all `$ref` pointers without running ajv validation. Server-side validation is sufficient. |
+| Inline `<script>` tags blocked by CSP | Middleware HTML had inline scripts for `defineRunDocs()` and spec embedding — blocked by Helmet's `script-src 'self'` | Fixed: all inline scripts removed. UMD bundle loaded via `<script src="./rundocs.js">`, init script via `<script src="./rundocs-init.js">`, spec served via `/spec.json` endpoint |
+| ES module loading blocked by CORS behind proxy | `<script type="module">` and `import()` trigger CORS preflight; proxy origin rejected by backend's CORS config | Fixed: switched from ES module (`rundocs.es.js`) to UMD bundle (`rundocs.js`) loaded via regular `<script>` tag — no CORS, no module loading |
+| DEP0151 deprecation warnings in test output | `@open-wc/semantic-dom-diff` missing `exports` field in package.json | Fixed: `NODE_OPTIONS='--disable-warning=DEP0151'` added to test script in `package.json` |
 
 ## TypeScript Strictness
 
@@ -534,5 +539,5 @@ npx pnpm run test:watch                      # Watch mode for development
 | `vitest.config.ts` | Test runner — happy-dom environment, coverage via v8, path aliases |
 | `tailwind.config.ts` | Tailwind — dark mode (class-based), HTTP method colors, custom fonts, `--sx-*` variables |
 | `postcss.config.js` | CSS — autoprefixer only (Tailwind handled by Vite plugin) |
-| `.eslintrc.cjs` | Linting — eslint:recommended + prettier integration |
+| `eslint.config.js` | Linting — typescript-eslint recommended + prettier integration (ESLint 10 flat config) |
 | `.prettierrc` | Formatting — semicolons, single quotes, trailing commas, 100 char width |

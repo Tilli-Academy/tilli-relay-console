@@ -16,7 +16,7 @@ describe('middleware/fastify', () => {
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toContain('text/html');
     expect(res.body).toContain('<rundocs-app');
-    expect(res.body).toContain('defineRunDocs');
+    expect(res.body).toContain('src="./rundocs-init.js"');
 
     await app.close();
   });
@@ -32,15 +32,15 @@ describe('middleware/fastify', () => {
     await app.close();
   });
 
-  it('embeds inline spec in the rendered HTML', async () => {
+  it('serves inline spec via spec-url attribute', async () => {
     const spec = { openapi: '3.0.0', info: { title: 'Test', version: '1.0' }, paths: {} };
     const app = Fastify();
     await app.register(runDocs, { spec });
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/' });
-    expect(res.body).toContain('__RUNDOCS_SPEC__');
-    expect(res.body).toContain('Test');
+    expect(res.body).toContain('spec-url="./spec.json"');
+    expect(res.body).not.toContain('__RUNDOCS_SPEC__');
 
     await app.close();
   });

@@ -8,7 +8,9 @@ import SwaggerParser from '@apidevtools/swagger-parser';
  * @param specUrlOrContent - URL to a JSON/YAML spec, inline JSON/YAML string, or parsed object
  * @returns Fully dereferenced OpenAPI document
  */
-export async function parseSpec(specUrlOrContent: string | Record<string, unknown>): Promise<Record<string, unknown>> {
+export async function parseSpec(
+  specUrlOrContent: string | Record<string, unknown>,
+): Promise<Record<string, unknown>> {
   try {
     let input: string | Record<string, unknown>;
 
@@ -32,8 +34,10 @@ export async function parseSpec(specUrlOrContent: string | Record<string, unknow
       input = specUrlOrContent;
     }
 
-    // Validate and dereference the spec
-    const api = await SwaggerParser.validate(input as string);
+    // Dereference the spec (resolve all $ref pointers).
+    // Uses dereference() instead of validate() because validate() relies on
+    // ajv which compiles schemas via new Function() — blocked by strict CSP.
+    const api = await SwaggerParser.dereference(input as string);
     const doc = api as unknown as Record<string, unknown>;
 
     // Reject Swagger 2.0 specs — parameter types and request bodies

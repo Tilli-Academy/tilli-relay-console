@@ -11,6 +11,18 @@ const runDocsPlugin: FastifyPluginCallback<RunDocsOptions> = (
   const distDir = getDistDir();
   const prefix = opts.routePrefix ?? '';
 
+  // Serve the init script as an external file (CSP-safe, CORS-safe)
+  fastify.get('/rundocs-init.js', (_request, reply) => {
+    void reply.type('application/javascript').send(`RunDocs.defineRunDocs();\n`);
+  });
+
+  // Serve inline spec as a JSON endpoint (CSP-safe, avoids inline scripts)
+  if (opts.spec) {
+    fastify.get('/spec.json', (_request, reply) => {
+      void reply.type('application/json').send(JSON.stringify(opts.spec));
+    });
+  }
+
   // Redirect /docs to /docs/ so relative asset paths resolve correctly
   fastify.get('/', (request, reply) => {
     if (!request.url.endsWith('/')) {
@@ -42,8 +54,7 @@ const runDocsPlugin: FastifyPluginCallback<RunDocsOptions> = (
  * app.register(runDocs, { prefix: '/docs', specUrl: '/openapi.json' });
  * ```
  */
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const fp = require('fastify-plugin') as typeof import('fastify-plugin')['default'];
+const fp = require('fastify-plugin') as (typeof import('fastify-plugin'))['default'];
 
 export const runDocs = fp(runDocsPlugin, {
   name: 'rundocs',

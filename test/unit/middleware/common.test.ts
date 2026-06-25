@@ -25,28 +25,27 @@ describe('middleware/common', () => {
       expect(html).toContain('spec-url="/api?v=1&amp;format=&quot;json&quot;"');
     });
 
-    it('injects inline spec as script when spec is provided', () => {
+    it('sets spec-url to ./spec.json when inline spec is provided', () => {
       const spec = { openapi: '3.0.0', info: { title: 'Test', version: '1.0' } };
       const html = renderHTML({ spec });
-      expect(html).toContain('window.__RUNDOCS_SPEC__');
-      expect(html).toContain('"openapi":"3.0.0"');
+      expect(html).toContain('spec-url="./spec.json"');
     });
 
     it('uses relative paths for assets regardless of routePrefix', () => {
       const html = renderHTML({ routePrefix: '/docs' });
       expect(html).toContain('href="./rundocs.css"');
-      expect(html).toContain("from './rundocs.es.js'");
+      expect(html).toContain('src="./rundocs.js"');
     });
 
     it('uses relative paths for assets by default', () => {
       const html = renderHTML();
       expect(html).toContain('href="./rundocs.css"');
-      expect(html).toContain("from './rundocs.es.js'");
+      expect(html).toContain('src="./rundocs.js"');
     });
 
-    it('calls defineRunDocs to register all components', () => {
+    it('loads init script from external file', () => {
       const html = renderHTML();
-      expect(html).toContain('defineRunDocs()');
+      expect(html).toContain('src="./rundocs-init.js"');
     });
 
     it('escapes HTML in title', () => {
@@ -61,20 +60,14 @@ describe('middleware/common', () => {
       expect(html).toContain('</rundocs-app>');
     });
 
-    it('escapes </script> in inline spec to prevent script injection', () => {
+    it('does not embed inline spec in HTML (served via /spec.json instead)', () => {
       const spec = { info: { description: '</script><script>alert("xss")</script>' } };
       const html = renderHTML({ spec });
-      // Must not contain a literal </script> inside the JSON — browser would close the tag early
+      // Spec is not embedded inline — no script injection vector
       expect(html).not.toContain('</script><script>alert');
-      // The < should be escaped as \u003c
-      expect(html).toContain('\\u003c/script>');
-    });
-
-    it('preserves spec data after escaping < in JSON', () => {
-      const spec = { info: { description: 'a < b and c > d' } };
-      const html = renderHTML({ spec });
-      expect(html).toContain('\\u003c');
-      expect(html).toContain('window.__RUNDOCS_SPEC__');
+      expect(html).not.toContain('window.__RUNDOCS_SPEC__');
+      // Spec is referenced via spec-url attribute instead
+      expect(html).toContain('spec-url="./spec.json"');
     });
   });
 
