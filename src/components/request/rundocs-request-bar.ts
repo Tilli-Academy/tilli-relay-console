@@ -43,7 +43,9 @@ export class RunDocsRequestBar extends LitElement {
         cursor: pointer;
         outline: none;
         min-width: 90px;
-        transition: border-color 0.15s, box-shadow 0.15s;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
       }
 
       .method-select:focus {
@@ -62,7 +64,9 @@ export class RunDocsRequestBar extends LitElement {
         font-family: 'JetBrains Mono', 'Fira Code', monospace;
         outline: none;
         min-width: 0;
-        transition: border-color 0.15s, box-shadow 0.15s;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
       }
 
       .url-input:focus {
@@ -88,7 +92,9 @@ export class RunDocsRequestBar extends LitElement {
         font-weight: 600;
         cursor: pointer;
         font-family: inherit;
-        transition: background 0.15s, box-shadow 0.15s;
+        transition:
+          background 0.15s,
+          box-shadow 0.15s;
       }
 
       .send-btn:hover {
@@ -134,9 +140,7 @@ export class RunDocsRequestBar extends LitElement {
 
   private _send() {
     if (this.loading) return;
-    this.dispatchEvent(
-      new CustomEvent('send-request', { bubbles: true, composed: true }),
-    );
+    this.dispatchEvent(new CustomEvent('send-request', { bubbles: true, composed: true }));
   }
 
   override render() {
@@ -149,7 +153,8 @@ export class RunDocsRequestBar extends LitElement {
           aria-label="HTTP method"
         >
           ${METHODS.map(
-            (m) => html`<option value=${m} ?selected=${m === this.method}>${m.toUpperCase()}</option>`,
+            (m) =>
+              html`<option value=${m} ?selected=${m === this.method}>${m.toUpperCase()}</option>`,
           )}
         </select>
         <input

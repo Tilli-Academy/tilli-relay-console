@@ -49,7 +49,9 @@ export class RunDocsSendButton extends LitElement {
     }
 
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
   `;
 
@@ -58,16 +60,15 @@ export class RunDocsSendButton extends LitElement {
 
   private _onClick() {
     if (this.loading) return;
-    this.dispatchEvent(
-      new CustomEvent('send-request', { bubbles: true, composed: true }),
-    );
+    this.dispatchEvent(new CustomEvent('send-request', { bubbles: true, composed: true }));
   }
 
   override render() {
     return html`
       <button @click=${this._onClick} ?disabled=${this.loading}>
         ${this.loading
-          ? html`<div class="spinner"></div> Sending...`
+          ? html`<div class="spinner"></div>
+              Sending...`
           : html`<rundocs-icon name="send" size=${16}></rundocs-icon> Send`}
       </button>
     `;

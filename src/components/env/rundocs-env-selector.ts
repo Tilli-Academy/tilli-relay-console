@@ -75,14 +75,17 @@ export class RunDocsEnvSelector extends LitElement {
   }
 
   private _onManage() {
-    this.dispatchEvent(
-      new CustomEvent('env-manage', { bubbles: true, composed: true }),
-    );
+    this.dispatchEvent(new CustomEvent('env-manage', { bubbles: true, composed: true }));
   }
 
   override render() {
     return html`
-      <select class="env-select" .value=${this.activeId ?? ''} @change=${this._onChange} aria-label="Select environment">
+      <select
+        class="env-select"
+        .value=${this.activeId ?? ''}
+        @change=${this._onChange}
+        aria-label="Select environment"
+      >
         <option value="">No Environment</option>
         ${this.environments.map(
           (env) => html`

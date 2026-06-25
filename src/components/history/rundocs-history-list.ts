@@ -114,9 +114,7 @@ export class RunDocsHistoryList extends LitElement {
   }
 
   private _onClear() {
-    this.dispatchEvent(
-      new CustomEvent('history-clear', { bubbles: true, composed: true }),
-    );
+    this.dispatchEvent(new CustomEvent('history-clear', { bubbles: true, composed: true }));
   }
 
   override render() {

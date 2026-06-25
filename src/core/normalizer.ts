@@ -139,9 +139,10 @@ function extractEndpoints(doc: Record<string, unknown>): Endpoint[] {
         responses: normalizeResponses(
           (operation.responses || {}) as Record<string, Record<string, unknown>>,
         ),
-        security: operation.security !== undefined
-          ? (operation.security as Endpoint['security'])
-          : globalSecurity,
+        security:
+          operation.security !== undefined
+            ? (operation.security as Endpoint['security'])
+            : globalSecurity,
         operationId: operation.operationId as string | undefined,
       };
 

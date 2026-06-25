@@ -26,10 +26,7 @@ export const TW = <T extends Constructor<LitElement>>(superClass: T): T =>
     connectedCallback() {
       super.connectedCallback();
       if (this.shadowRoot) {
-        adoptStyles(this.shadowRoot, [
-          ...(this.shadowRoot.adoptedStyleSheets || []),
-          sheet,
-        ]);
+        adoptStyles(this.shadowRoot, [...(this.shadowRoot.adoptedStyleSheets || []), sheet]);
       }
     }
   } as unknown as T;

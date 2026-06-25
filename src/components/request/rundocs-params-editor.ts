@@ -60,7 +60,9 @@ export class RunDocsParamsEditor extends LitElement {
         font-size: 0.8125rem;
         font-family: 'JetBrains Mono', 'Fira Code', monospace;
         outline: none;
-        transition: border-color 0.15s, box-shadow 0.15s;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
       }
 
       input:focus {
@@ -124,8 +126,7 @@ export class RunDocsParamsEditor extends LitElement {
               (p) => html`
                 <div class="param-row">
                   <div class="param-label">
-                    ${p.name}
-                    ${p.required ? html`<span class="required">*</span>` : nothing}
+                    ${p.name} ${p.required ? html`<span class="required">*</span>` : nothing}
                   </div>
                   <input
                     type="text"
@@ -139,7 +140,6 @@ export class RunDocsParamsEditor extends LitElement {
             )}
           `
         : nothing}
-
       ${queryParams.length > 0
         ? html`
             <div class="section-label">Query Parameters</div>
@@ -147,8 +147,7 @@ export class RunDocsParamsEditor extends LitElement {
               (p) => html`
                 <div class="param-row">
                   <div class="param-label">
-                    ${p.name}
-                    ${p.required ? html`<span class="required">*</span>` : nothing}
+                    ${p.name} ${p.required ? html`<span class="required">*</span>` : nothing}
                   </div>
                   <input
                     type="text"

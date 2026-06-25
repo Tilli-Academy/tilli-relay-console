@@ -157,7 +157,11 @@ export const darkTheme = css`
 export const baseStyles = css`
   :host {
     display: block;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family:
+      'Inter',
+      system-ui,
+      -apple-system,
+      sans-serif;
     color: var(--sx-text-primary);
     background: var(--sx-surface-primary);
     line-height: 1.6;

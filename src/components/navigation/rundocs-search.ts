@@ -43,7 +43,9 @@ export class RunDocsSearch extends LitElement {
         font-size: 0.8125rem;
         font-family: inherit;
         outline: none;
-        transition: border-color 0.15s, box-shadow 0.15s;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
       }
 
       input:focus {
@@ -113,9 +115,7 @@ export class RunDocsSearch extends LitElement {
         composed: true,
       }),
     );
-    this.dispatchEvent(
-      new CustomEvent('search-clear', { bubbles: true, composed: true }),
-    );
+    this.dispatchEvent(new CustomEvent('search-clear', { bubbles: true, composed: true }));
   }
 
   override render() {

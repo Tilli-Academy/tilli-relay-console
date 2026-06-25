@@ -12,7 +12,13 @@ import '../request/rundocs-request-bar.js';
 import '../request/rundocs-request-tabs.js';
 import '../response/rundocs-response.js';
 import '../code/rundocs-code-samples.js';
-import type { Endpoint, Parameter, HttpMethod, AuthConfig, ResponseState } from '../../core/types.js';
+import type {
+  Endpoint,
+  Parameter,
+  HttpMethod,
+  AuthConfig,
+  ResponseState,
+} from '../../core/types.js';
 import type { KeyValuePair } from '../shared/rundocs-key-value-editor.js';
 import type { TabDef } from '../shared/rundocs-tabs.js';
 
@@ -285,7 +291,11 @@ export class RunDocsEndpoint extends LitElement {
       tabs.push({ id: 'schema', label: 'Request Body' });
     }
     if (Object.keys(ep.responses).length > 0) {
-      tabs.push({ id: 'responses', label: 'Responses', badge: String(Object.keys(ep.responses).length) });
+      tabs.push({
+        id: 'responses',
+        label: 'Responses',
+        badge: String(Object.keys(ep.responses).length),
+      });
     }
     tabs.push({ id: 'code', label: 'Code' });
     return tabs;
@@ -303,10 +313,7 @@ export class RunDocsEndpoint extends LitElement {
   override updated(changed: Map<string, unknown>) {
     if (changed.has('endpoint') && changed.get('endpoint') != null) {
       // Fade in when switching between endpoints (not on initial load)
-      this.animate(
-        [{ opacity: 0 }, { opacity: 1 }],
-        { duration: 200, easing: 'ease-out' },
-      );
+      this.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'ease-out' });
     }
   }
 
@@ -332,16 +339,24 @@ export class RunDocsEndpoint extends LitElement {
         <rundocs-method-badge method=${ep.method}></rundocs-method-badge>
         <rundocs-path-display path=${ep.path}></rundocs-path-display>
         <div class="header-tags">
-          ${ep.deprecated ? html`<rundocs-badge variant="warning">Deprecated</rundocs-badge>` : nothing}
-          ${ep.security.length > 0 ? html`<rundocs-badge variant="info">Authenticated</rundocs-badge>` : nothing}
+          ${ep.deprecated
+            ? html`<rundocs-badge variant="warning">Deprecated</rundocs-badge>`
+            : nothing}
+          ${ep.security.length > 0
+            ? html`<rundocs-badge variant="info">Authenticated</rundocs-badge>`
+            : nothing}
           ${ep.tags.map((tag) => html`<rundocs-badge>${tag}</rundocs-badge>`)}
         </div>
       </div>
 
       <!-- Summary + description (compact) -->
       ${ep.summary ? html`<h2 class="summary">${ep.summary}</h2>` : nothing}
-      ${ep.operationId ? html`<div class="operation-id">operationId: ${ep.operationId}</div>` : nothing}
-      ${ep.description ? html`<rundocs-description text=${ep.description}></rundocs-description>` : nothing}
+      ${ep.operationId
+        ? html`<div class="operation-id">operationId: ${ep.operationId}</div>`
+        : nothing}
+      ${ep.description
+        ? html`<rundocs-description text=${ep.description}></rundocs-description>`
+        : nothing}
 
       <!-- Request Builder Card -->
       <div class="request-card">
@@ -368,7 +383,10 @@ export class RunDocsEndpoint extends LitElement {
       ${this.response
         ? html`
             <div class="response-card">
-              <rundocs-response .response=${this.response} ?loading=${this.requestLoading}></rundocs-response>
+              <rundocs-response
+                .response=${this.response}
+                ?loading=${this.requestLoading}
+              ></rundocs-response>
             </div>
           `
         : nothing}
@@ -381,11 +399,15 @@ export class RunDocsEndpoint extends LitElement {
                 <rundocs-tabs
                   .tabs=${docTabs}
                   active=${activeDocTab}
-                  @tab-change=${(e: CustomEvent) => { this._docTab = e.detail.tab; }}
+                  @tab-change=${(e: CustomEvent) => {
+                    this._docTab = e.detail.tab;
+                  }}
                 ></rundocs-tabs>
               </div>
               <div class="docs-tab-content">
-                ${activeDocTab === 'params' ? this._renderParams(paramLocations, paramGroups) : nothing}
+                ${activeDocTab === 'params'
+                  ? this._renderParams(paramLocations, paramGroups)
+                  : nothing}
                 ${activeDocTab === 'schema' ? this._renderSchema(ep, bodyMediaType) : nothing}
                 ${activeDocTab === 'responses' ? this._renderResponses(ep) : nothing}
                 ${activeDocTab === 'code' ? this._renderCode(ep) : nothing}
@@ -430,7 +452,9 @@ export class RunDocsEndpoint extends LitElement {
 
   private _renderSchema(ep: Endpoint, bodyMediaType: { schema: unknown } | null) {
     return html`
-      ${ep.requestBody?.required ? html`<rundocs-badge variant="error">required</rundocs-badge>` : nothing}
+      ${ep.requestBody?.required
+        ? html`<rundocs-badge variant="error">required</rundocs-badge>`
+        : nothing}
       ${ep.requestBody?.description
         ? html`<rundocs-description text=${ep.requestBody.description}></rundocs-description>`
         : nothing}

@@ -46,7 +46,7 @@ export function generateCodeSamples(
   // (even if empty) so curl shows -d.  Matches Swagger UI behaviour.
   const methodsWithBody = ['post', 'put', 'patch'];
   const body = methodsWithBody.includes(endpoint.method)
-    ? (userBody || getExampleBody(endpoint.requestBody) || '')
+    ? userBody || getExampleBody(endpoint.requestBody) || ''
     : null;
 
   // Build merged headers: auth headers first, then custom headers (can override)
@@ -120,7 +120,8 @@ function getContentType(requestBody: RequestBodyDef | undefined): string {
   const types = Object.keys(requestBody.content);
   if (types.includes('application/json')) return 'application/json';
   if (types.includes('multipart/form-data')) return 'multipart/form-data';
-  if (types.includes('application/x-www-form-urlencoded')) return 'application/x-www-form-urlencoded';
+  if (types.includes('application/x-www-form-urlencoded'))
+    return 'application/x-www-form-urlencoded';
   return types[0] || 'application/json';
 }
 
@@ -134,7 +135,13 @@ function escapeJsString(str: string): string {
   return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
-function generateCurl(endpoint: Endpoint, url: string, body: string | null, extraHeaders: Record<string, string>, contentType: string | null): string {
+function generateCurl(
+  endpoint: Endpoint,
+  url: string,
+  body: string | null,
+  extraHeaders: Record<string, string>,
+  contentType: string | null,
+): string {
   const method = endpoint.method.toUpperCase();
   const lines: string[] = [`curl -X ${method} '${escapeShellSingleQuote(url)}'`];
 
@@ -165,7 +172,13 @@ function generateCurl(endpoint: Endpoint, url: string, body: string | null, extr
   return lines.join(' \\\n');
 }
 
-function generateJavaScript(endpoint: Endpoint, url: string, body: string | null, extraHeaders: Record<string, string>, contentType: string | null): string {
+function generateJavaScript(
+  endpoint: Endpoint,
+  url: string,
+  body: string | null,
+  extraHeaders: Record<string, string>,
+  contentType: string | null,
+): string {
   const method = endpoint.method.toUpperCase();
   const allHeaders: Record<string, string> = { ...extraHeaders };
   if (!allHeaders['Accept']) allHeaders['Accept'] = 'application/json';
@@ -209,7 +222,13 @@ function generateJavaScript(endpoint: Endpoint, url: string, body: string | null
   return lines.join('\n');
 }
 
-function generatePython(endpoint: Endpoint, url: string, body: string | null, extraHeaders: Record<string, string>, contentType: string | null): string {
+function generatePython(
+  endpoint: Endpoint,
+  url: string,
+  body: string | null,
+  extraHeaders: Record<string, string>,
+  contentType: string | null,
+): string {
   const method = endpoint.method.toLowerCase();
   const allHeaders: Record<string, string> = { ...extraHeaders };
   if (!allHeaders['Accept']) allHeaders['Accept'] = 'application/json';
@@ -261,7 +280,13 @@ function generatePython(endpoint: Endpoint, url: string, body: string | null, ex
   return lines.join('\n');
 }
 
-function generateNodeJs(endpoint: Endpoint, url: string, body: string | null, extraHeaders: Record<string, string>, contentType: string | null): string {
+function generateNodeJs(
+  endpoint: Endpoint,
+  url: string,
+  body: string | null,
+  extraHeaders: Record<string, string>,
+  contentType: string | null,
+): string {
   const method = endpoint.method.toUpperCase();
   const allHeaders: Record<string, string> = { ...extraHeaders };
   if (!allHeaders['Accept']) allHeaders['Accept'] = 'application/json';

@@ -10,7 +10,17 @@ import { EnvStore } from '../../state/env-store.js';
 import { RequestStore } from '../../state/request-store.js';
 import { interpolate } from '../../utils/env-interpolator.js';
 import { sendRequest } from '../../utils/http-client.js';
-import type { RunDocsSpec, UIState, HistoryEntry, Environment, Endpoint, TagGroup, HttpMethod, AuthConfig, RequestState } from '../../core/types.js';
+import type {
+  RunDocsSpec,
+  UIState,
+  HistoryEntry,
+  Environment,
+  Endpoint,
+  TagGroup,
+  HttpMethod,
+  AuthConfig,
+  RequestState,
+} from '../../core/types.js';
 import type { KeyValuePair } from '../shared/rundocs-key-value-editor.js';
 import '../layout/rundocs-header.js';
 import '../layout/rundocs-split-pane.js';
@@ -389,7 +399,9 @@ export class RunDocsApp extends LitElement {
     }
   }
 
-  private _onHeadersChange(e: CustomEvent<{ headers: Record<string, string>; pairs: KeyValuePair[] }>) {
+  private _onHeadersChange(
+    e: CustomEvent<{ headers: Record<string, string>; pairs: KeyValuePair[] }>,
+  ) {
     const ep = this._selectedEndpoint;
     if (!ep) return;
     const store = this._getOrCreateRequestStore(ep);
@@ -470,10 +482,18 @@ export class RunDocsApp extends LitElement {
     const interpolatedAuth: AuthConfig = {
       ...state.auth,
       token: state.auth.token ? interpolate(state.auth.token, envVars) : state.auth.token,
-      username: state.auth.username ? interpolate(state.auth.username, envVars) : state.auth.username,
-      password: state.auth.password ? interpolate(state.auth.password, envVars) : state.auth.password,
-      apiKeyName: state.auth.apiKeyName ? interpolate(state.auth.apiKeyName, envVars) : state.auth.apiKeyName,
-      apiKeyValue: state.auth.apiKeyValue ? interpolate(state.auth.apiKeyValue, envVars) : state.auth.apiKeyValue,
+      username: state.auth.username
+        ? interpolate(state.auth.username, envVars)
+        : state.auth.username,
+      password: state.auth.password
+        ? interpolate(state.auth.password, envVars)
+        : state.auth.password,
+      apiKeyName: state.auth.apiKeyName
+        ? interpolate(state.auth.apiKeyName, envVars)
+        : state.auth.apiKeyName,
+      apiKeyValue: state.auth.apiKeyValue
+        ? interpolate(state.auth.apiKeyValue, envVars)
+        : state.auth.apiKeyValue,
     };
 
     const response = await sendRequest({
@@ -634,13 +654,8 @@ export class RunDocsApp extends LitElement {
               @panel-change=${this._onPanelChange}
             >
               <div slot="endpoints">
-                <rundocs-search
-                  @search-input=${this._onSearch}
-                ></rundocs-search>
-                <rundocs-toc
-                  .info=${this._spec.info}
-                  .servers=${this._spec.servers}
-                ></rundocs-toc>
+                <rundocs-search @search-input=${this._onSearch}></rundocs-search>
+                <rundocs-toc .info=${this._spec.info} .servers=${this._spec.servers}></rundocs-toc>
                 ${this._filteredTags.length > 0
                   ? this._filteredTags.map(
                       (tag) => html`
@@ -674,7 +689,8 @@ export class RunDocsApp extends LitElement {
                       ></rundocs-empty-state>
                     `}
               </div>
-              <div slot="history"
+              <div
+                slot="history"
                 @history-select=${this._onHistorySelect}
                 @history-remove=${this._onHistoryRemove}
                 @history-clear=${this._onHistoryClear}
@@ -685,7 +701,8 @@ export class RunDocsApp extends LitElement {
                 ></rundocs-history-list>
               </div>
             </rundocs-sidebar>
-            <rundocs-main slot="right"
+            <rundocs-main
+              slot="right"
               @method-change=${this._onMethodChange}
               @url-change=${this._onUrlChange}
               @param-change=${this._onParamChange}

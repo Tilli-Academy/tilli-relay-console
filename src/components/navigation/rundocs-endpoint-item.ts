@@ -29,7 +29,9 @@ export class RunDocsEndpointItem extends LitElement {
         text-align: left;
         border-radius: var(--sx-radius-md);
         margin: 1px 0;
-        transition: background 0.12s, box-shadow 0.12s;
+        transition:
+          background 0.12s,
+          box-shadow 0.12s;
         font-family: inherit;
         border-left: 3px solid transparent;
       }

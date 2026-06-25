@@ -157,8 +157,12 @@ export class RunDocsEnvManager extends LitElement {
       }
 
       @keyframes vars-fade-in {
-        from { opacity: 0; }
-        to { opacity: 1; }
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
       }
     `,
   ];
@@ -245,9 +249,7 @@ export class RunDocsEnvManager extends LitElement {
   }
 
   private _onClose() {
-    this.dispatchEvent(
-      new CustomEvent('env-close', { bubbles: true, composed: true }),
-    );
+    this.dispatchEvent(new CustomEvent('env-close', { bubbles: true, composed: true }));
   }
 
   private _getVarPairs(env: Environment): KeyValuePair[] {
@@ -268,7 +270,9 @@ export class RunDocsEnvManager extends LitElement {
 
     return html`
       <rundocs-modal ?open=${this.open} heading="Manage Environments" @modal-close=${this._onClose}>
-        ${this._autoSaveVisible ? html`<span slot="header-extra" class="auto-save-text">✓ Auto-saved</span>` : nothing}
+        ${this._autoSaveVisible
+          ? html`<span slot="header-extra" class="auto-save-text">✓ Auto-saved</span>`
+          : nothing}
 
         <div class="add-row">
           <input
@@ -276,7 +280,9 @@ export class RunDocsEnvManager extends LitElement {
             type="text"
             placeholder="New environment name"
             .value=${this._newEnvName}
-            @input=${(e: InputEvent) => { this._newEnvName = (e.target as HTMLInputElement).value; }}
+            @input=${(e: InputEvent) => {
+              this._newEnvName = (e.target as HTMLInputElement).value;
+            }}
             @keydown=${this._onAddKeyDown}
           />
           <button class="add-btn" @click=${this._onAdd}>
@@ -293,12 +299,23 @@ export class RunDocsEnvManager extends LitElement {
                 role="button"
                 tabindex="0"
                 aria-label="Select environment: ${env.name}"
-                @click=${() => { this._selectedId = env.id; }}
-                @keydown=${(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._selectedId = env.id; } }}
+                @click=${() => {
+                  this._selectedId = env.id;
+                }}
+                @keydown=${(e: KeyboardEvent) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this._selectedId = env.id;
+                  }
+                }}
               >
                 <span class="env-name">${env.name}</span>
                 <span class="env-count">${Object.keys(env.variables).length} vars</span>
-                <button class="remove-btn" @click=${(e: Event) => this._onRemove(env.id, e)} aria-label="Remove">
+                <button
+                  class="remove-btn"
+                  @click=${(e: Event) => this._onRemove(env.id, e)}
+                  aria-label="Remove"
+                >
                   <rundocs-icon name="trash" size=${14}></rundocs-icon>
                 </button>
               </div>
@@ -307,18 +324,21 @@ export class RunDocsEnvManager extends LitElement {
         </div>
 
         ${this._selectedEnv
-          ? keyed(this._selectedEnv.id, html`
-              <div class="vars-section">
-                <div class="divider"></div>
-                <h4 class="vars-title">${this._selectedEnv.name} — Variables</h4>
-                <rundocs-key-value-editor
-                  .pairs=${this._getVarPairs(this._selectedEnv)}
-                  key-placeholder="Variable name"
-                  value-placeholder="Value"
-                  @kv-change=${this._onVarsChange}
-                ></rundocs-key-value-editor>
-              </div>
-            `)
+          ? keyed(
+              this._selectedEnv.id,
+              html`
+                <div class="vars-section">
+                  <div class="divider"></div>
+                  <h4 class="vars-title">${this._selectedEnv.name} — Variables</h4>
+                  <rundocs-key-value-editor
+                    .pairs=${this._getVarPairs(this._selectedEnv)}
+                    key-placeholder="Variable name"
+                    value-placeholder="Value"
+                    @kv-change=${this._onVarsChange}
+                  ></rundocs-key-value-editor>
+                </div>
+              `,
+            )
           : html`<div class="no-selection">Select an environment to edit its variables</div>`}
       </rundocs-modal>
     `;

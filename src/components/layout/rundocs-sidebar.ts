@@ -43,7 +43,9 @@ export class RunDocsSidebar extends LitElement {
         border-bottom: 2px solid transparent;
         margin-bottom: -1px;
         font-family: inherit;
-        transition: color 0.15s, border-color 0.15s;
+        transition:
+          color 0.15s,
+          border-color 0.15s;
       }
 
       .sidebar-tab:hover {

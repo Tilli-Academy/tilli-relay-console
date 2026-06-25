@@ -63,7 +63,9 @@ export class RunDocsKeyValueEditor extends LitElement {
         font-size: 0.8125rem;
         font-family: 'JetBrains Mono', 'Fira Code', monospace;
         outline: none;
-        transition: border-color 0.15s, box-shadow 0.15s;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
       }
 
       input[type='text']:focus {
@@ -152,9 +154,7 @@ export class RunDocsKeyValueEditor extends LitElement {
   }
 
   private _toggleEnabled(index: number) {
-    this._emit(this.pairs.map((p, i) =>
-      i === index ? { ...p, enabled: !p.enabled } : p,
-    ));
+    this._emit(this.pairs.map((p, i) => (i === index ? { ...p, enabled: !p.enabled } : p)));
   }
 
   private _updateKey(index: number, key: string) {
@@ -198,19 +198,25 @@ export class RunDocsKeyValueEditor extends LitElement {
               type="text"
               .value=${pair.key}
               placeholder=${this.keyPlaceholder}
-              @input=${(e: InputEvent) => this._updateKey(index, (e.target as HTMLInputElement).value)}
+              @input=${(e: InputEvent) =>
+                this._updateKey(index, (e.target as HTMLInputElement).value)}
               ?disabled=${this.readonly}
             />
             <input
               type="text"
               .value=${pair.value}
               placeholder=${this.valuePlaceholder}
-              @input=${(e: InputEvent) => this._updateValue(index, (e.target as HTMLInputElement).value)}
+              @input=${(e: InputEvent) =>
+                this._updateValue(index, (e.target as HTMLInputElement).value)}
               ?disabled=${this.readonly}
             />
             ${!this.readonly
               ? html`
-                  <button class="remove-btn" @click=${() => this._removeRow(index)} aria-label="Remove row">
+                  <button
+                    class="remove-btn"
+                    @click=${() => this._removeRow(index)}
+                    aria-label="Remove row"
+                  >
                     <rundocs-icon name="minus" size=${14}></rundocs-icon>
                   </button>
                 `

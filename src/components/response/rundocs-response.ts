@@ -49,7 +49,9 @@ export class RunDocsResponse extends LitElement {
       }
 
       @keyframes sx-spin {
-        to { transform: rotate(360deg); }
+        to {
+          transform: rotate(360deg);
+        }
       }
 
       .response-header {
@@ -132,7 +134,9 @@ export class RunDocsResponse extends LitElement {
 
     return html`
       <div class="response-container">
-        ${this.loading ? html`<div class="loading-overlay"><div class="loading-spinner"></div></div>` : nothing}
+        ${this.loading
+          ? html`<div class="loading-overlay"><div class="loading-spinner"></div></div>`
+          : nothing}
         <div class="response-header">
           <div class="response-title">Response</div>
           <rundocs-response-meta
@@ -146,7 +150,9 @@ export class RunDocsResponse extends LitElement {
           <rundocs-tabs
             .tabs=${this._tabs}
             active=${this._activeTab}
-            @tab-change=${(e: CustomEvent) => { this._activeTab = e.detail.tab; }}
+            @tab-change=${(e: CustomEvent) => {
+              this._activeTab = e.detail.tab;
+            }}
           ></rundocs-tabs>
         </div>
         <div class="tab-content">
@@ -159,11 +165,7 @@ export class RunDocsResponse extends LitElement {
               `
             : nothing}
           ${this._activeTab === 'headers'
-            ? html`
-                <rundocs-response-headers
-                  .headers=${resp.headers}
-                ></rundocs-response-headers>
-              `
+            ? html` <rundocs-response-headers .headers=${resp.headers}></rundocs-response-headers> `
             : nothing}
         </div>
       </div>

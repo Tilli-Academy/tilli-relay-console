@@ -70,9 +70,7 @@ export class RunDocsMethodBadge extends LitElement {
     const label = this.method.toUpperCase();
 
     return html`
-      <span class="method-badge ${this.method}">
-        ${this.compact ? label.slice(0, 3) : label}
-      </span>
+      <span class="method-badge ${this.method}"> ${this.compact ? label.slice(0, 3) : label} </span>
     `;
   }
 }

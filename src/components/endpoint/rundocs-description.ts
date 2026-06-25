@@ -31,10 +31,18 @@ export class RunDocsDescription extends LitElement {
         line-height: 1.3;
       }
 
-      .content h1 { font-size: 1.25rem; }
-      .content h2 { font-size: 1.125rem; }
-      .content h3 { font-size: 1rem; }
-      .content h4 { font-size: 0.875rem; }
+      .content h1 {
+        font-size: 1.25rem;
+      }
+      .content h2 {
+        font-size: 1.125rem;
+      }
+      .content h3 {
+        font-size: 1rem;
+      }
+      .content h4 {
+        font-size: 0.875rem;
+      }
 
       .content p {
         margin: 8px 0;

@@ -49,7 +49,10 @@ export class RunDocsTabs extends LitElement {
         border-bottom: 2px solid transparent;
         border-radius: var(--sx-radius-sm) var(--sx-radius-sm) 0 0;
         margin-bottom: -2px;
-        transition: color 0.15s, border-color 0.15s, background 0.15s;
+        transition:
+          color 0.15s,
+          border-color 0.15s,
+          background 0.15s;
         font-family: inherit;
       }
 
@@ -112,8 +115,7 @@ export class RunDocsTabs extends LitElement {
               aria-selected=${this.active === tab.id}
               @click=${() => this._onTabClick(tab.id)}
             >
-              ${tab.label}
-              ${tab.badge ? html`<span class="badge">${tab.badge}</span>` : ''}
+              ${tab.label} ${tab.badge ? html`<span class="badge">${tab.badge}</span>` : ''}
             </button>
           `,
         )}

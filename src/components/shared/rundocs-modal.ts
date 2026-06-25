@@ -101,9 +101,7 @@ export class RunDocsModal extends LitElement {
   heading = '';
 
   private _close() {
-    this.dispatchEvent(
-      new CustomEvent('modal-close', { bubbles: true, composed: true }),
-    );
+    this.dispatchEvent(new CustomEvent('modal-close', { bubbles: true, composed: true }));
   }
 
   private _onKeyDown = (e: KeyboardEvent) => {

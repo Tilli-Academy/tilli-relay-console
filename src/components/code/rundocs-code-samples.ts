@@ -86,8 +86,12 @@ export class RunDocsCodeSamples extends LitElement {
       token: this.auth.token ? interpolate(this.auth.token, env) : this.auth.token,
       username: this.auth.username ? interpolate(this.auth.username, env) : this.auth.username,
       password: this.auth.password ? interpolate(this.auth.password, env) : this.auth.password,
-      apiKeyName: this.auth.apiKeyName ? interpolate(this.auth.apiKeyName, env) : this.auth.apiKeyName,
-      apiKeyValue: this.auth.apiKeyValue ? interpolate(this.auth.apiKeyValue, env) : this.auth.apiKeyValue,
+      apiKeyName: this.auth.apiKeyName
+        ? interpolate(this.auth.apiKeyName, env)
+        : this.auth.apiKeyName,
+      apiKeyValue: this.auth.apiKeyValue
+        ? interpolate(this.auth.apiKeyValue, env)
+        : this.auth.apiKeyValue,
     };
 
     // 3. Resolve headers: interpolate env vars in keys and values
@@ -126,7 +130,9 @@ export class RunDocsCodeSamples extends LitElement {
       <rundocs-tabs
         .tabs=${this._tabs}
         active=${this._activeTab}
-        @tab-change=${(e: CustomEvent) => { this._activeTab = e.detail.tab as CodeLanguage; }}
+        @tab-change=${(e: CustomEvent) => {
+          this._activeTab = e.detail.tab as CodeLanguage;
+        }}
       ></rundocs-tabs>
       <div class="tab-content">
         ${activeCode

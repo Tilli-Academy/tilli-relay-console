@@ -67,9 +67,10 @@ export class RunDocsRequestTabs extends LitElement {
       {
         id: 'headers',
         label: 'Headers',
-        badge: this.headerPairs.filter((p) => p.enabled && p.key).length > 0
-          ? String(this.headerPairs.filter((p) => p.enabled && p.key).length)
-          : undefined,
+        badge:
+          this.headerPairs.filter((p) => p.enabled && p.key).length > 0
+            ? String(this.headerPairs.filter((p) => p.enabled && p.key).length)
+            : undefined,
       },
       { id: 'auth', label: 'Auth' },
     ];
@@ -93,7 +94,9 @@ export class RunDocsRequestTabs extends LitElement {
       <rundocs-tabs
         .tabs=${this._tabs}
         active=${this._activeTab}
-        @tab-change=${(e: CustomEvent) => { this._activeTab = e.detail.tab; }}
+        @tab-change=${(e: CustomEvent) => {
+          this._activeTab = e.detail.tab;
+        }}
       ></rundocs-tabs>
       <div class="tab-content">
         ${this._activeTab === 'params'

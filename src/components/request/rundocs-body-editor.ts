@@ -58,7 +58,9 @@ export class RunDocsBodyEditor extends LitElement {
         border-radius: var(--sx-radius-lg);
         overflow: hidden;
         min-height: 200px;
-        transition: border-color 0.15s, box-shadow 0.15s;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
       }
 
       .editor-wrapper:focus-within {
@@ -164,7 +166,12 @@ export class RunDocsBodyEditor extends LitElement {
     return html`
       <div class="content-type-row">
         <span class="content-type-label">Content-Type:</span>
-        <select class="content-type-select" .value=${this.contentType} @change=${this._onContentTypeChange} aria-label="Content type">
+        <select
+          class="content-type-select"
+          .value=${this.contentType}
+          @change=${this._onContentTypeChange}
+          aria-label="Content type"
+        >
           <option value="application/json">application/json</option>
           <option value="application/xml">application/xml</option>
           <option value="text/plain">text/plain</option>

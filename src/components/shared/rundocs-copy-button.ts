@@ -27,7 +27,9 @@ export class RunDocsCopyButton extends LitElement {
       cursor: pointer;
       font-size: 0.75rem;
       font-family: inherit;
-      transition: background 0.15s, color 0.15s;
+      transition:
+        background 0.15s,
+        color 0.15s;
     }
 
     button:hover {
@@ -73,7 +75,11 @@ export class RunDocsCopyButton extends LitElement {
 
   override render() {
     return html`
-      <button class=${this._copied ? 'copied' : ''} @click=${this._copy} aria-label="Copy to clipboard">
+      <button
+        class=${this._copied ? 'copied' : ''}
+        @click=${this._copy}
+        aria-label="Copy to clipboard"
+      >
         <rundocs-icon name=${this._copied ? 'check' : 'copy'} size=${14}></rundocs-icon>
         ${this._copied ? 'Copied' : 'Copy'}
       </button>

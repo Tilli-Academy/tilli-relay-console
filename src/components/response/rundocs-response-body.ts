@@ -63,7 +63,9 @@ export class RunDocsResponseBody extends LitElement {
         font-size: 0.6875rem;
         font-weight: 500;
         font-family: inherit;
-        transition: background 0.12s, color 0.12s;
+        transition:
+          background 0.12s,
+          color 0.12s;
       }
 
       .view-btn:not(:last-child) {
@@ -231,9 +233,7 @@ export class RunDocsResponseBody extends LitElement {
 
     if (changed.has('_wordWrap') && this._view) {
       this._view.dispatch({
-        effects: this._wrapCompartment.reconfigure(
-          this._wordWrap ? EditorView.lineWrapping : [],
-        ),
+        effects: this._wrapCompartment.reconfigure(this._wordWrap ? EditorView.lineWrapping : []),
       });
     }
   }
@@ -283,13 +283,21 @@ export class RunDocsResponseBody extends LitElement {
                   <button
                     class="view-btn ${this._viewMode === 'pretty' ? 'active' : ''}"
                     aria-pressed=${this._viewMode === 'pretty'}
-                    @click=${() => { this._viewMode = 'pretty'; }}
-                  >Pretty</button>
+                    @click=${() => {
+                      this._viewMode = 'pretty';
+                    }}
+                  >
+                    Pretty
+                  </button>
                   <button
                     class="view-btn ${this._viewMode === 'raw' ? 'active' : ''}"
                     aria-pressed=${this._viewMode === 'raw'}
-                    @click=${() => { this._viewMode = 'raw'; }}
-                  >Raw</button>
+                    @click=${() => {
+                      this._viewMode = 'raw';
+                    }}
+                  >
+                    Raw
+                  </button>
                 </div>
               `
             : nothing}
@@ -298,7 +306,9 @@ export class RunDocsResponseBody extends LitElement {
           <button
             class="wrap-toggle ${this._wordWrap ? 'active' : ''}"
             aria-pressed=${this._wordWrap}
-            @click=${() => { this._wordWrap = !this._wordWrap; }}
+            @click=${() => {
+              this._wordWrap = !this._wordWrap;
+            }}
           >
             Word Wrap
           </button>

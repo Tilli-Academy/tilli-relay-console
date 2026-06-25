@@ -54,13 +54,27 @@ export class RunDocsHistoryItem extends LitElement {
         text-align: center;
       }
 
-      .method.get { color: var(--sx-method-get-text); }
-      .method.post { color: var(--sx-method-post-text); }
-      .method.put { color: var(--sx-method-put-text); }
-      .method.patch { color: var(--sx-method-patch-text); }
-      .method.delete { color: var(--sx-method-delete-text); }
-      .method.head { color: var(--sx-method-head-text); }
-      .method.options { color: var(--sx-method-options-text); }
+      .method.get {
+        color: var(--sx-method-get-text);
+      }
+      .method.post {
+        color: var(--sx-method-post-text);
+      }
+      .method.put {
+        color: var(--sx-method-put-text);
+      }
+      .method.patch {
+        color: var(--sx-method-patch-text);
+      }
+      .method.delete {
+        color: var(--sx-method-delete-text);
+      }
+      .method.head {
+        color: var(--sx-method-head-text);
+      }
+      .method.options {
+        color: var(--sx-method-options-text);
+      }
 
       .details {
         flex: 1;
@@ -172,7 +186,15 @@ export class RunDocsHistoryItem extends LitElement {
 
   override render() {
     return html`
-      <div class="item" role="button" tabindex="0" @click=${this._onClick} @keydown=${this._onKeyDown} aria-label="${this.method.toUpperCase()} ${this.url}" aria-selected=${this.selected}>
+      <div
+        class="item"
+        role="button"
+        tabindex="0"
+        @click=${this._onClick}
+        @keydown=${this._onKeyDown}
+        aria-label="${this.method.toUpperCase()} ${this.url}"
+        aria-selected=${this.selected}
+      >
         <span class="method ${this.method}">${this.method.toUpperCase()}</span>
         <div class="details">
           <div class="url">${this.url}</div>

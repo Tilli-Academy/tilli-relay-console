@@ -35,7 +35,9 @@ export class RunDocsSplitPane extends LitElement {
         cursor: col-resize;
         background: var(--sx-border);
         flex-shrink: 0;
-        transition: background 0.15s, width 0.15s;
+        transition:
+          background 0.15s,
+          width 0.15s;
         position: relative;
       }
 

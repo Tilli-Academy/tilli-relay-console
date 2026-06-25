@@ -93,7 +93,9 @@ export class RunDocsResponseMeta extends LitElement {
         ></rundocs-status-badge>
         <div class="meta-item">
           <span class="meta-label">Time:</span>
-          <span class="meta-value ${this._getTimeClass(this.time)}">${this._formatTime(this.time)}</span>
+          <span class="meta-value ${this._getTimeClass(this.time)}"
+            >${this._formatTime(this.time)}</span
+          >
         </div>
         <div class="meta-item">
           <span class="meta-label">Size:</span>

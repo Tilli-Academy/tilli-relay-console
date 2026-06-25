@@ -85,10 +85,7 @@ export class RunDocsToc extends LitElement {
     if (!this.info) return nothing;
 
     return html`
-      ${this.info.description
-        ? html`<p class="description">${this.info.description}</p>`
-        : nothing}
-
+      ${this.info.description ? html`<p class="description">${this.info.description}</p>` : nothing}
       ${this.servers.length > 0
         ? html`
             <ul class="servers">
@@ -97,7 +94,9 @@ export class RunDocsToc extends LitElement {
                   <li class="server">
                     <rundocs-icon name="globe" size=${14}></rundocs-icon>
                     <span class="server-url">${s.url}</span>
-                    ${s.description ? html`<span class="server-desc">(${s.description})</span>` : ''}
+                    ${s.description
+                      ? html`<span class="server-desc">(${s.description})</span>`
+                      : ''}
                   </li>
                 `,
               )}
@@ -108,13 +107,17 @@ export class RunDocsToc extends LitElement {
       <div class="meta">
         ${this.info.contact?.email
           ? html`<span class="meta-item">
-              <a class="meta-link" href="mailto:${this.info.contact.email}">${this.info.contact.email}</a>
+              <a class="meta-link" href="mailto:${this.info.contact.email}"
+                >${this.info.contact.email}</a
+              >
             </span>`
           : nothing}
         ${this.info.license
           ? html`<span class="meta-item">
               ${this.info.license.url
-                ? html`<a class="meta-link" href=${this.info.license.url} target="_blank">${this.info.license.name}</a>`
+                ? html`<a class="meta-link" href=${this.info.license.url} target="_blank"
+                    >${this.info.license.name}</a
+                  >`
                 : this.info.license.name}
             </span>`
           : nothing}

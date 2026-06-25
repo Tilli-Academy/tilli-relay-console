@@ -180,8 +180,18 @@ export class RunDocsSchemaProperty extends LitElement {
         <div class="property-header">
           ${this._hasChildren
             ? html`
-                <button class="toggle-btn" aria-expanded=${this._expanded} aria-label="Toggle ${this.name || 'property'} details" @click=${() => { this._expanded = !this._expanded; }}>
-                  <rundocs-icon name=${this._expanded ? 'chevron-down' : 'chevron-right'} size=${12}></rundocs-icon>
+                <button
+                  class="toggle-btn"
+                  aria-expanded=${this._expanded}
+                  aria-label="Toggle ${this.name || 'property'} details"
+                  @click=${() => {
+                    this._expanded = !this._expanded;
+                  }}
+                >
+                  <rundocs-icon
+                    name=${this._expanded ? 'chevron-down' : 'chevron-right'}
+                    size=${12}
+                  ></rundocs-icon>
                 </button>
               `
             : nothing}
@@ -195,7 +205,8 @@ export class RunDocsSchemaProperty extends LitElement {
         ${this.schema.enum
           ? html`
               <div class="enum-values">
-                Enum: ${this.schema.enum.map((v) => html`<span class="enum-val">${String(v)}</span> `)}
+                Enum:
+                ${this.schema.enum.map((v) => html`<span class="enum-val">${String(v)}</span> `)}
               </div>
             `
           : nothing}

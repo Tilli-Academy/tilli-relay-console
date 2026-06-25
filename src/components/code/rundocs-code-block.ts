@@ -59,22 +59,47 @@ export class RunDocsCodeBlock extends LitElement {
       /* Prism.js syntax highlighting — mapped to theme variables */
       .token.property,
       .token.tag,
-      .token.keyword { color: var(--sx-syntax-key); }
+      .token.keyword {
+        color: var(--sx-syntax-key);
+      }
       .token.string,
-      .token.attr-value { color: var(--sx-syntax-string); }
-      .token.number { color: var(--sx-syntax-number); }
+      .token.attr-value {
+        color: var(--sx-syntax-string);
+      }
+      .token.number {
+        color: var(--sx-syntax-number);
+      }
       .token.boolean,
       .token.builtin,
-      .token.function { color: var(--sx-syntax-boolean); }
-      .token.operator { color: var(--sx-syntax-key); }
-      .token.comment { color: var(--sx-syntax-null); font-style: italic; }
-      .token.punctuation { color: var(--sx-syntax-bracket); }
-      .token.class-name { color: var(--sx-syntax-number); }
-      .token.null { color: var(--sx-syntax-null); }
+      .token.function {
+        color: var(--sx-syntax-boolean);
+      }
+      .token.operator {
+        color: var(--sx-syntax-key);
+      }
+      .token.comment {
+        color: var(--sx-syntax-null);
+        font-style: italic;
+      }
+      .token.punctuation {
+        color: var(--sx-syntax-bracket);
+      }
+      .token.class-name {
+        color: var(--sx-syntax-number);
+      }
+      .token.null {
+        color: var(--sx-syntax-null);
+      }
       /* API-specific tokens */
-      .token.flag { color: var(--sx-syntax-number); }
-      .token.http-method { color: var(--sx-syntax-boolean); }
-      .token.method-call .token.function { color: var(--sx-syntax-boolean); }
+      .token.flag {
+        color: var(--sx-syntax-number);
+      }
+      .token.http-method {
+        color: var(--sx-syntax-boolean);
+      }
+      .token.method-call .token.function {
+        color: var(--sx-syntax-boolean);
+      }
     `,
   ];
 

@@ -30,9 +30,7 @@ export function buildUrl(
   let url = `${base}${cleanPath}`;
 
   // Add query parameters
-  const queryEntries = Object.entries(queryParams).filter(
-    ([, value]) => value !== '',
-  );
+  const queryEntries = Object.entries(queryParams).filter(([, value]) => value !== '');
   if (queryEntries.length > 0) {
     const params = new URLSearchParams();
     for (const [key, value] of queryEntries) {

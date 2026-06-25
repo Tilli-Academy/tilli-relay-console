@@ -51,27 +51,22 @@ export function markdownToHtml(md: string): string {
     .join('\n');
 
   // Single newlines -> <br> within paragraphs
-  result = result.replace(/<p>([^]*?)<\/p>/g, (_, content) =>
-    `<p>${content.replace(/\n/g, '<br>')}</p>`,
+  result = result.replace(
+    /<p>([^]*?)<\/p>/g,
+    (_, content) => `<p>${content.replace(/\n/g, '<br>')}</p>`,
   );
 
   return result;
 }
 
 function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 /** Allowlist safe URL schemes and escape quotes to prevent XSS via href injection. */
 function sanitizeUrl(url: string): string {
   // Decode HTML entities so we can inspect the real URL
-  const decoded = url
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>');
+  const decoded = url.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 
   const trimmed = decoded.trim().toLowerCase();
 

@@ -108,7 +108,10 @@ export class RunDocsHeader extends LitElement {
         cursor: pointer;
         color: var(--sx-text-secondary);
         padding: 0;
-        transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+        transition:
+          background 0.12s,
+          color 0.12s,
+          box-shadow 0.12s;
       }
 
       .icon-btn:hover {
@@ -129,15 +132,11 @@ export class RunDocsHeader extends LitElement {
   theme: 'light' | 'dark' = 'light';
 
   private _toggleTheme() {
-    this.dispatchEvent(
-      new CustomEvent('theme-toggle', { bubbles: true, composed: true }),
-    );
+    this.dispatchEvent(new CustomEvent('theme-toggle', { bubbles: true, composed: true }));
   }
 
   private _toggleSidebar() {
-    this.dispatchEvent(
-      new CustomEvent('sidebar-toggle', { bubbles: true, composed: true }),
-    );
+    this.dispatchEvent(new CustomEvent('sidebar-toggle', { bubbles: true, composed: true }));
   }
 
   override render() {
@@ -155,7 +154,9 @@ export class RunDocsHeader extends LitElement {
                 <span class="divider"></span>
                 <div class="api-info">
                   <span class="api-title">${this.apiTitle}</span>
-                  ${this.apiVersion ? html`<span class="api-version">v${this.apiVersion}</span>` : ''}
+                  ${this.apiVersion
+                    ? html`<span class="api-version">v${this.apiVersion}</span>`
+                    : ''}
                 </div>
               `
             : ''}
@@ -164,7 +165,10 @@ export class RunDocsHeader extends LitElement {
           <slot name="actions"></slot>
           <rundocs-tooltip text=${this.theme === 'light' ? 'Dark mode' : 'Light mode'}>
             <button class="icon-btn" @click=${this._toggleTheme} aria-label="Toggle theme">
-              <rundocs-icon name=${this.theme === 'light' ? 'moon' : 'sun'} size=${18}></rundocs-icon>
+              <rundocs-icon
+                name=${this.theme === 'light' ? 'moon' : 'sun'}
+                size=${18}
+              ></rundocs-icon>
             </button>
           </rundocs-tooltip>
         </div>

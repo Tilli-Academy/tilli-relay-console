@@ -127,15 +127,21 @@ export class RunDocsAuthEditor extends LitElement {
   override render() {
     return html`
       <label for="auth-type-select" class="sr-only">Authentication type</label>
-      <select id="auth-type-select" class="auth-type-select" .value=${this.auth.type} @change=${this._onTypeChange}>
+      <select
+        id="auth-type-select"
+        class="auth-type-select"
+        .value=${this.auth.type}
+        @change=${this._onTypeChange}
+      >
         <option value="none">No Auth</option>
         <option value="bearer">Bearer Token</option>
         <option value="basic">Basic Auth</option>
         <option value="apiKey">API Key</option>
       </select>
 
-      ${this.auth.type === 'none' ? html`<div class="no-auth">This request does not use any authorization.</div>` : nothing}
-
+      ${this.auth.type === 'none'
+        ? html`<div class="no-auth">This request does not use any authorization.</div>`
+        : nothing}
       ${this.auth.type === 'bearer'
         ? html`
             <div class="field">
@@ -146,12 +152,12 @@ export class RunDocsAuthEditor extends LitElement {
                 type="text"
                 .value=${this.auth.token ?? ''}
                 placeholder="Enter bearer token"
-                @input=${(e: InputEvent) => this._onFieldChange('token', (e.target as HTMLInputElement).value)}
+                @input=${(e: InputEvent) =>
+                  this._onFieldChange('token', (e.target as HTMLInputElement).value)}
               />
             </div>
           `
         : nothing}
-
       ${this.auth.type === 'basic'
         ? html`
             <div class="field-row">
@@ -163,7 +169,8 @@ export class RunDocsAuthEditor extends LitElement {
                   type="text"
                   .value=${this.auth.username ?? ''}
                   placeholder="Username"
-                  @input=${(e: InputEvent) => this._onFieldChange('username', (e.target as HTMLInputElement).value)}
+                  @input=${(e: InputEvent) =>
+                    this._onFieldChange('username', (e.target as HTMLInputElement).value)}
                 />
               </div>
               <div class="field">
@@ -174,13 +181,13 @@ export class RunDocsAuthEditor extends LitElement {
                   type="password"
                   .value=${this.auth.password ?? ''}
                   placeholder="Password"
-                  @input=${(e: InputEvent) => this._onFieldChange('password', (e.target as HTMLInputElement).value)}
+                  @input=${(e: InputEvent) =>
+                    this._onFieldChange('password', (e.target as HTMLInputElement).value)}
                 />
               </div>
             </div>
           `
         : nothing}
-
       ${this.auth.type === 'apiKey'
         ? html`
             <div class="field-row">
@@ -192,7 +199,8 @@ export class RunDocsAuthEditor extends LitElement {
                   type="text"
                   .value=${this.auth.apiKeyName ?? ''}
                   placeholder="e.g. X-API-Key"
-                  @input=${(e: InputEvent) => this._onFieldChange('apiKeyName', (e.target as HTMLInputElement).value)}
+                  @input=${(e: InputEvent) =>
+                    this._onFieldChange('apiKeyName', (e.target as HTMLInputElement).value)}
                 />
               </div>
               <div class="field">
@@ -203,7 +211,8 @@ export class RunDocsAuthEditor extends LitElement {
                   type="text"
                   .value=${this.auth.apiKeyValue ?? ''}
                   placeholder="API key value"
-                  @input=${(e: InputEvent) => this._onFieldChange('apiKeyValue', (e.target as HTMLInputElement).value)}
+                  @input=${(e: InputEvent) =>
+                    this._onFieldChange('apiKeyValue', (e.target as HTMLInputElement).value)}
                 />
               </div>
             </div>
@@ -215,7 +224,8 @@ export class RunDocsAuthEditor extends LitElement {
                   value="header"
                   .checked=${this.auth.apiKeyIn === 'header'}
                   @change=${() => this._onFieldChange('apiKeyIn', 'header')}
-                /> Header
+                />
+                Header
               </label>
               <label class="radio-label">
                 <input
@@ -224,7 +234,8 @@ export class RunDocsAuthEditor extends LitElement {
                   value="query"
                   .checked=${this.auth.apiKeyIn === 'query'}
                   @change=${() => this._onFieldChange('apiKeyIn', 'query')}
-                /> Query Param
+                />
+                Query Param
               </label>
             </div>
           `
