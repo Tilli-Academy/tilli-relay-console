@@ -55,6 +55,7 @@ RunDocs is an OpenAPI 3.x documentation UI with Postman-like UX, built as an ins
 | Technology | Version | Purpose |
 |---|---|---|
 | Vitest | 4.1.6 | Unit test runner |
+| Playwright | 1.61.1 | E2E browser testing (Chromium) |
 | happy-dom | 20.9.0 | Lightweight DOM for tests |
 | @open-wc/testing | 4.0.0 | Web component testing utilities |
 | @types/prismjs | 1.26.6 | TypeScript type declarations for Prism.js |
@@ -81,6 +82,7 @@ RunDocs is an OpenAPI 3.x documentation UI with Postman-like UX, built as an ins
 | Source code (42 components) | Done |
 | Dual build system (Vite + tsup) | Done |
 | Unit tests (523 tests, 59 files) | Done |
+| E2E tests (14 test files, Playwright) | Done |
 | Accessibility audit + fixes | Done |
 | TypeScript strict mode | Done |
 | Dev server (Vite) | Done |
@@ -321,6 +323,7 @@ rundocs/
 │   │   ├── state/                            # env-store, history-store, request-store, spec-store, ui-store tests
 │   │   ├── middleware/                        # express, fastify, common tests
 │   │   └── utils/                            # http-client, url-builder, env-interpolator, local-storage, markdown tests
+│   ├── e2e/                                    # 14 Playwright E2E test files (spec-loading, sidebar, search, endpoint-details, request-builder, auth, send-request, response-viewer, code-samples, history, environment, schema, dark-mode, accessibility)
 │   └── fixtures/
 │       └── minimal-spec.json                 # Minimal valid OpenAPI spec for unit tests
 │
@@ -334,6 +337,7 @@ rundocs/
 ├── tsup.config.ts                            # tsup middleware build config
 ├── tsconfig.json                             # TypeScript compiler config
 ├── vitest.config.ts                          # Vitest test runner config
+├── playwright.config.ts                      # Playwright E2E test config (Chromium, auto-starts demo server)
 ├── tailwind.config.ts                        # Tailwind CSS theme + colors
 ├── postcss.config.js                         # PostCSS with autoprefixer
 ├── eslint.config.js                          # ESLint flat config
@@ -401,6 +405,7 @@ npx pnpm run format             # Prettier auto-format src/
 npx pnpm run format:check       # Check formatting without fixing
 
 # E2E Testing
+npx pnpm run test:e2e           # Run Playwright E2E tests (auto-builds + starts demo server)
 
 # Utility
 npx pnpm run clean              # Delete dist/ folder
@@ -410,8 +415,9 @@ npx pnpm run clean              # Delete dist/ folder
 
 ### Overview
 
-- **523 tests** across **59 test files** (488 base + 5 Phase 6 additions + 28 Minor Issue 1 additions + 3 generateId additions - 1 removed during CSP refactor)
-- **Test runner**: Vitest with happy-dom environment
+- **Unit tests**: 523 tests across 59 test files (Vitest + happy-dom)
+- **E2E tests**: 14 test files covering all user-facing features (Playwright + Chromium)
+- **Test runner**: Vitest (unit), Playwright (E2E)
 - **Component testing**: @open-wc/testing for Lit component fixtures
 - **All tests pass** with TypeScript compiling cleanly
 
@@ -424,6 +430,7 @@ npx pnpm run clean              # Delete dist/ folder
 | State | 5 | All stores — env, history, request, spec, UI state management |
 | Middleware | 3 | Express middleware, Fastify plugin, shared HTML renderer |
 | Utils | 5 | HTTP client, URL builder, env interpolator, localStorage helpers, markdown parser |
+| E2E | 14 | Full user flows — spec loading, sidebar nav, search, endpoint details, request builder, auth, send request, response viewer, code samples, history, environment, schema, dark mode, accessibility |
 
 ### Test Patterns
 
@@ -494,7 +501,7 @@ npx pnpm run test:watch                      # Watch mode for development
 | Demo standalone.html blank page | Missing `defineRunDocs()` call and Petstore CORS errors | Fixed: added `defineRunDocs()` import/call, switched to local `fakerest-spec.json` |
 | Demo server.ts CORS errors | Used `specUrl` pointing to Petstore (cross-origin fetch blocked) | Fixed: switched to inline `spec` loaded from `public/fakerest-spec.json` |
 | Fastify tests vacuous | Tests only checked `typeof runDocs === 'function'`, not actual route behavior | Fixed: rewrote with `Fastify.inject()` to verify HTML rendering, specUrl, inline spec, custom title |
-| `test:e2e` script broken | Referenced `playwright test` but Playwright was never installed | Fixed: removed dead script from `package.json` |
+| `test:e2e` script broken | Referenced `playwright test` but Playwright was never installed | Fixed: installed `@playwright/test` + Chromium, created `playwright.config.ts` and 14 E2E test files |
 | Swagger 2.0 spec shows wrong types | Normalizer assumes OAS3 `param.schema` — 2.0 puts type directly on param, so everything falls back to `string` | Fixed: `parser.ts` now rejects 2.0 specs with a clear error and conversion link. Scoped to OpenAPI 3.x only. |
 | Demo server 404 on CSS/JS files | `getDistDir()` resolved to `src/` when running from source instead of `dist/` | Fixed: detect `src/middleware` path and resolve to `../../dist` instead of `..` |
 | RequestStore memory leak on spec change | Per-endpoint stores cached in Map, never evicted when spec changes — listeners accumulate | Fixed: `dispose()` clears listeners, `_clearRequestStores()` called on spec change and disconnect |
@@ -536,7 +543,8 @@ npx pnpm run test:watch                      # Watch mode for development
 | `vite.config.ts` | Frontend build — library mode (ES + UMD), Tailwind plugin, node polyfills, dev server host |
 | `tsup.config.ts` | Middleware build — Express + Fastify entry points, CJS + ESM, type declarations, silences import.meta CJS warning |
 | `tsconfig.json` | TypeScript — strict mode, ES2021 target, bundler resolution, declaration files |
-| `vitest.config.ts` | Test runner — happy-dom environment, coverage via v8, path aliases |
+| `vitest.config.ts` | Unit test runner — happy-dom environment, coverage via v8, path aliases |
+| `playwright.config.ts` | E2E test runner — Chromium only, auto-starts demo server on port 3000, HTML reporter |
 | `tailwind.config.ts` | Tailwind — dark mode (class-based), HTTP method colors, custom fonts, `--sx-*` variables |
 | `postcss.config.js` | CSS — autoprefixer only (Tailwind handled by Vite plugin) |
 | `eslint.config.js` | Linting — typescript-eslint recommended + prettier integration (ESLint 10 flat config) |
