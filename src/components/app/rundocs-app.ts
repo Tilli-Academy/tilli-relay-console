@@ -188,7 +188,8 @@ export class RunDocsApp extends LitElement {
       }),
     );
 
-    // Apply initial theme
+    // Apply initial theme from persisted state
+    this.appTheme = this._uiState.theme === 'dark' ? 'dark' : 'light';
     this.setAttribute('theme', this.appTheme);
     // Spec loading is handled by updated() — avoids double-load on initial render
   }

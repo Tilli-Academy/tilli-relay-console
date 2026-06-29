@@ -1,5 +1,10 @@
+import { createRequire } from 'module';
 import type { FastifyInstance, FastifyPluginCallback } from 'fastify';
 import { getDistDir, renderHTML, type RunDocsOptions } from './common.js';
+
+const _require = createRequire(
+  typeof __filename !== 'undefined' ? __filename : import.meta.url,
+);
 
 export type { RunDocsOptions };
 
@@ -54,7 +59,7 @@ const runDocsPlugin: FastifyPluginCallback<RunDocsOptions> = (
  * app.register(runDocs, { prefix: '/docs', specUrl: '/openapi.json' });
  * ```
  */
-const fp = require('fastify-plugin') as (typeof import('fastify-plugin'))['default'];
+const fp = _require('fastify-plugin') as (typeof import('fastify-plugin'))['default'];
 
 export const runDocs = fp(runDocsPlugin, {
   name: 'rundocs',

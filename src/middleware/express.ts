@@ -1,5 +1,10 @@
+import { createRequire } from 'module';
 import type { RequestHandler, Router } from 'express';
 import { getDistDir, renderHTML, type RunDocsOptions } from './common.js';
+
+const _require = createRequire(
+  typeof __filename !== 'undefined' ? __filename : import.meta.url,
+);
 
 export type { RunDocsOptions };
 
@@ -16,7 +21,7 @@ export type { RunDocsOptions };
  * ```
  */
 export function runDocs(opts: RunDocsOptions = {}): Router {
-  const express = require('express') as typeof import('express');
+  const express = _require('express') as typeof import('express');
 
   const router = express.Router();
   const distDir = getDistDir();
