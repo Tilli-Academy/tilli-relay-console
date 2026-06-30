@@ -32,6 +32,8 @@ export function generateCodeSamples(
         resolvedBase = window.location.origin;
       }
     }
+    // Note: when served via middleware with route-prefix, the parent component
+    // passes the correct proxy-aware base URL, so this fallback rarely triggers.
     // Remove trailing slash to avoid double slashes
     resolvedBase = resolvedBase.replace(/\/$/, '');
     fullUrl = `${resolvedBase}${endpoint.path}`;

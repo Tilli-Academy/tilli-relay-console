@@ -19,7 +19,7 @@ RunDocs is an OpenAPI 3.x documentation UI with Postman-like UX, built as an ins
 - **Dark Mode** — Light/dark theme toggle, persisted to localStorage
 - **Fuzzy Search** — Filter endpoints instantly via fuse.js
 - **Resizable Split Pane** — Draggable sidebar/main divider, ratio persisted
-- **Server Middleware** — Express middleware and Fastify plugin for mounting RunDocs in Node.js apps, supports both `specUrl` and inline `spec` options, proxy-safe with relative asset paths and trailing slash redirect. CSP-safe: no inline scripts, works with strict `script-src 'self'` policies (Helmet). CORS-safe: uses UMD bundle via regular `<script>` tag instead of ES modules
+- **Server Middleware** — Express middleware and Fastify plugin for mounting RunDocs in Node.js apps, supports both `specUrl` and inline `spec` options, proxy-safe with relative asset paths and trailing slash redirect. Proxy-aware base URL: automatically detects reverse proxy prefixes (e.g., `/proxy/3101`) by stripping the route prefix from the page URL, so API requests and code samples use the correct full URL — even when the OpenAPI spec has no `servers` configured. CSP-safe: no inline scripts, works with strict `script-src 'self'` policies (Helmet). CORS-safe: uses UMD bundle via regular `<script>` tag instead of ES modules
 - **Accessibility** — Form labels connected via `for`/`id`, `aria-pressed` on toggle buttons, `role="alert"` on error states, `aria-busy` on loading, `aria-label` on selects/inputs, `.sr-only` utility class in baseStyles, keyboard navigation, semantic HTML, focus management
 
 ## Technology Stack
@@ -81,7 +81,7 @@ RunDocs is an OpenAPI 3.x documentation UI with Postman-like UX, built as an ins
 |---|---|
 | Source code (42 components) | Done |
 | Dual build system (Vite + tsup) | Done |
-| Unit tests (523 tests, 59 files) | Done |
+| Unit tests (534 tests, 61 files) | Done |
 | E2E tests (14 test files, Playwright) | Done |
 | Accessibility audit + fixes | Done |
 | TypeScript strict mode | Done |
@@ -175,7 +175,7 @@ Code samples (dynamic, fully resolved):
   → applyApiKeyToUrl() for API key query params
   → POST/PUT/PATCH always include body (userBody or empty string); GET/DELETE have no body
   → generates cURL, JavaScript (fetch), Python (requests), Node.js (axios)
-  → window.location.origin fallback when baseUrl is empty
+  → _derivedBaseUrl in rundocs-app: spec servers → strip route prefix from page URL → window.location.origin fallback
 ```
 
 Each endpoint gets its own `RequestStore` instance, lazily created and tracked in a `Map<string, RequestStore>` in `rundocs-app`. All stores are disposed (listeners cleared) and the map is emptied when the spec changes or the component disconnects, preventing memory leaks.
@@ -308,7 +308,7 @@ rundocs/
 ├── test/
 │   ├── unit/
 │   │   ├── components/                       # 42 component test files (rundocs-app covered by E2E)
-│   │   │   ├── app/                          # (no unit test — rundocs-app tested via Playwright E2E)
+│   │   │   ├── app/                          # derived-base-url tests (proxy-aware URL logic; full rendering tested via E2E)
 │   │   │   ├── code/                         # code-block, code-samples tests
 │   │   │   ├── endpoint/                     # endpoint, method-badge, path-display, description tests
 │   │   │   ├── env/                          # env-manager, env-selector tests
@@ -389,7 +389,7 @@ npx pnpm dev                    # Start Vite dev server (loads Petstore spec)
 npx pnpm run typecheck          # TypeScript type checking (strict, noUnusedLocals/Params)
 
 # Testing
-npx pnpm test                   # Run all 523 tests once
+npx pnpm test                   # Run all 534 tests once
 npx pnpm run test:watch         # Run tests in watch mode
 npx vitest run test/unit/core/  # Run tests in a specific directory
 npx vitest run -t "parseSpec"   # Run tests matching a name pattern
@@ -415,7 +415,7 @@ npx pnpm run clean              # Delete dist/ folder
 
 ### Overview
 
-- **Unit tests**: 523 tests across 59 test files (Vitest + happy-dom)
+- **Unit tests**: 534 tests across 61 test files (Vitest + happy-dom)
 - **E2E tests**: 14 test files covering all user-facing features (Playwright + Chromium)
 - **Test runner**: Vitest (unit), Playwright (E2E)
 - **Component testing**: @open-wc/testing for Lit component fixtures
@@ -425,7 +425,7 @@ npx pnpm run clean              # Delete dist/ folder
 
 | Category | Files | What is tested |
 |---|---|---|
-| Components | 42 | 41 of 42 UI components — rendering, events, properties, user interaction (rundocs-app covered by E2E tests) |
+| Components | 43 | 41 of 42 UI components + rundocs-app proxy-aware base URL logic (rundocs-app full rendering covered by E2E tests) |
 | Core | 4 | Spec parsing (JSON/YAML), normalization, schema resolution, code generation |
 | State | 5 | All stores — env, history, request, spec, UI state management |
 | Middleware | 3 | Express middleware, Fastify plugin, shared HTML renderer |
@@ -477,6 +477,7 @@ npx pnpm run test:watch                      # Watch mode for development
 | CSS/JS 404 when accessing `/docs` (no trailing slash) | Browser resolves `./rundocs.css` against wrong directory | Middleware redirects `/docs` → `/docs/` (301) — already fixed |
 | "No API Specification" with inline spec | `spec` property set before custom element is defined | Middleware uses `customElements.whenDefined()` before setting `spec` — already fixed |
 | Code samples show URLs without server address | `baseUrl` is empty or relative | `code-gen.ts` falls back to `window.location.origin` — already fixed |
+| API requests missing reverse proxy prefix (e.g., `/proxy/3101`) | OpenAPI spec has empty `servers` array, `window.location.origin` loses proxy path | Fixed: `_derivedBaseUrl` in `rundocs-app.ts` strips route prefix from page URL to derive correct base URL. Middleware passes `route-prefix` attribute to HTML. 3-step logic: spec servers → strip route prefix → fallback to origin |
 | `specUrl` fails behind proxy | Browser fetches spec from wrong host | Use inline `spec` option instead of `specUrl` in middleware config |
 | Modal shows tooltip on hover | Using `title` property (native HTML tooltip) | Use `heading` property instead — already renamed |
 | API Key query param not sent | Comment said "handled in URL builder" but nobody did it | Fixed: `http-client.ts` appends query param to URL before fetch |

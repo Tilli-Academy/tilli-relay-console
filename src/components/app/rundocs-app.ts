@@ -101,6 +101,9 @@ export class RunDocsApp extends LitElement {
   @property({ type: String, attribute: 'theme' })
   appTheme: 'light' | 'dark' = 'light';
 
+  @property({ type: String, attribute: 'route-prefix' })
+  routePrefix = '';
+
   // Context providers
   @provide({ context: specContext })
   @state()
@@ -153,6 +156,36 @@ export class RunDocsApp extends LitElement {
 
   // Unsubscribe functions
   private _unsubs: (() => void)[] = [];
+
+  /**
+   * Derives the base URL for API requests by stripping the route prefix
+   * from the current page URL. This handles reverse proxy setups where
+   * the proxy adds a path prefix (e.g., /proxy/3101).
+   *
+   * Falls back to window.location.origin if route prefix is not set
+   * or not found in the page URL.
+   */
+  private get _derivedBaseUrl(): string {
+    if (typeof window === 'undefined') return '';
+
+    // Step 1: If spec has servers with an absolute URL, use those (no change)
+    const specServer = this._spec?.servers[0]?.url ?? '';
+    if (specServer && specServer !== '/' && specServer.startsWith('http')) {
+      return specServer;
+    }
+
+    // Step 2: If we have a route prefix, strip it from the page URL
+    if (this.routePrefix) {
+      const pageUrl = window.location.href.split('?')[0].split('#')[0]; // strip query/hash
+      const prefixIndex = pageUrl.indexOf(this.routePrefix);
+      if (prefixIndex > 0) {
+        return pageUrl.substring(0, prefixIndex).replace(/\/+$/, '');
+      }
+    }
+
+    // Step 3: Fallback to current behavior
+    return window.location.origin;
+  }
 
   constructor() {
     super();
@@ -341,7 +374,7 @@ export class RunDocsApp extends LitElement {
   private _getOrCreateRequestStore(endpoint: Endpoint): RequestStore {
     let store = this._requestStores.get(endpoint.id);
     if (!store) {
-      const baseUrl = this._spec?.servers[0]?.url ?? '';
+      const baseUrl = this._derivedBaseUrl;
       const fullUrl = `${baseUrl}${endpoint.path}`;
       store = new RequestStore(endpoint.method, fullUrl);
       // Pre-fill body with {} for endpoints that accept a request body
@@ -726,13 +759,13 @@ export class RunDocsApp extends LitElement {
                     .contentType=${this._requestState.contentType}
                     ?requestLoading=${this._requestState.loading}
                     .response=${this._requestState.response}
-                    base-url=${this._spec?.servers[0]?.url ?? ''}
+                    base-url=${this._derivedBaseUrl}
                     .envVars=${this._getActiveEnvVars()}
                   ></rundocs-endpoint>`
                 : this._selectedEndpoint
                   ? html`<rundocs-endpoint
                       .endpoint=${this._selectedEndpoint}
-                      base-url=${this._spec?.servers[0]?.url ?? ''}
+                      base-url=${this._derivedBaseUrl}
                       .envVars=${this._getActiveEnvVars()}
                     ></rundocs-endpoint>`
                   : html`

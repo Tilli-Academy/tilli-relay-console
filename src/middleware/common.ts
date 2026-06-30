@@ -54,7 +54,7 @@ export function renderHTML(opts: RunDocsOptions = {}): string {
   </style>
 </head>
 <body>
-  <rundocs-app${specAttr}></rundocs-app>
+  <rundocs-app${specAttr}${opts.routePrefix ? ` route-prefix="${escapeAttr(opts.routePrefix)}"` : ''}></rundocs-app>
   <script src="./rundocs.js"></script>
   <script src="./rundocs-init.js"></script>
 </body>
