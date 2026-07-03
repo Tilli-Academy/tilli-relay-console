@@ -1,0 +1,14 @@
+openapi: '3.0.0'
+info:
+  title: Petstore YAML
+  version: '1.0.0'
+  description: A YAML version of the petstore spec
+paths:
+  /pets:
+    get:
+      tags:
+        - pets
+      summary: List all pets
+      responses:
+        '200':
+          description: A list of pets

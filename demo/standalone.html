@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RunDocs — Standalone Demo</title>
+
+  <!--
+    CDN Usage Example:
+    Replace the src/href below with the actual CDN URLs after publishing.
+    For local development, run `pnpm build` first and then serve this file.
+  -->
+  <link rel="stylesheet" href="../dist/rundocs.css" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+    rundocs-app {
+      display: block;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <rundocs-app
+    spec-url="../dist/fakerest-spec.json"
+  ></rundocs-app>
+
+  <script type="module">
+    import { defineRunDocs } from '../dist/rundocs.es.js';
+    defineRunDocs();
+  </script>
+</body>
+</html>
